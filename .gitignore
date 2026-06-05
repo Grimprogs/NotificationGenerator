@@ -36,8 +36,6 @@ outputs/
 outputs_v2/
 outputs_v3/
 outputs_new/
-*.json
-
 # ── OS garbage ────────────────────────────────────
 .DS_Store
 Thumbs.db
