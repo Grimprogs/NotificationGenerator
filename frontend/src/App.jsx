@@ -11,6 +11,105 @@ const TONE_COLORS = {
   curiosity:    "#fcd34d",
 }
 
+const SEGMENT_ICONS = {
+  content_reader:   "📄",
+  high_converter:   "🚀",
+  job_hunter:       "💼",
+  scheme_seeker:    "🏛️",
+  service_explorer: "🔧",
+}
+
+// ── SEGMENT CARD ─────────────────────────────────────────────────────────────
+
+function SegmentCard({ segment }) {
+  if (!segment) return null
+  const { label, traits = [], notification_responsive, segment_pct, color, is_best, segment_key } = segment
+  const icon = SEGMENT_ICONS[segment_key] || "👤"
+  const pctNum = parseFloat(segment_pct) || 0
+
+  return (
+    <div style={{
+      background: "var(--card)",
+      border: `1px solid ${color}44`,
+      borderRadius: 14,
+      padding: "20px 24px",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* glow blob */}
+      <div style={{
+        position: "absolute", top: -30, right: -30,
+        width: 100, height: 100, borderRadius: "50%",
+        background: color + "18", pointerEvents: "none",
+      }} />
+
+      {/* header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: 10,
+            background: color + "20",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 20,
+          }}>
+            {icon}
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 700, color: "#fff", margin: 0 }}>
+                {label}
+              </p>
+              {is_best && (
+                <span style={{
+                  fontSize: 9, padding: "2px 7px", borderRadius: 20,
+                  background: color + "25", color,
+                  letterSpacing: 1.2, fontWeight: 700, textTransform: "uppercase",
+                }}>
+                  Best Segment
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: 11, color: "var(--muted)", margin: "2px 0 0" }}>
+              {notification_responsive} notification responsive
+            </p>
+          </div>
+        </div>
+        <span style={{
+          fontFamily: "'Syne', sans-serif", fontSize: 22,
+          fontWeight: 800, color,
+        }}>
+          {segment_pct}
+        </span>
+      </div>
+
+      {/* progress bar */}
+      <div style={{
+        height: 3, background: "var(--border)", borderRadius: 99,
+        marginBottom: 14, overflow: "hidden",
+      }}>
+        <div style={{
+          height: "100%", width: `${pctNum}%`,
+          background: `linear-gradient(90deg, ${color}88, ${color})`,
+          borderRadius: 99,
+        }} />
+      </div>
+
+      {/* traits */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+        {traits.map((t, i) => (
+          <span key={i} style={{
+            fontSize: 12, padding: "4px 10px", borderRadius: 6,
+            background: "var(--surface)", border: "1px solid var(--border)",
+            color: "var(--text)",
+          }}>
+            <span style={{ color, marginRight: 4 }}>•</span>{t}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function toneColor(tone = "") {
   const t = tone.toLowerCase()
   return Object.entries(TONE_COLORS).find(([k]) => t.includes(k))?.[1] ?? "#64748b"
@@ -261,6 +360,21 @@ export default function App() {
           <p style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 1 }}>
             user {data.user_id} · {new Date(data.generated_at).toLocaleString()}
           </p>
+
+          {/* ── USER SEGMENT */}
+          {data.user_segment && (
+            <div>
+              <h2 style={{
+                fontFamily:"'Syne', sans-serif", fontSize: 13,
+                fontWeight: 700, letterSpacing: 3,
+                color: "var(--muted)", textTransform:"uppercase",
+                marginBottom: 12,
+              }}>
+                User Segment
+              </h2>
+              <SegmentCard segment={data.user_segment} />
+            </div>
+          )}
 
           {/* ── 5 NOTIFICATIONS */}
           <div style={{ display:"flex", flexDirection:"column", gap: 16 }}>

@@ -1,44 +1,50 @@
 """
-Notification MVP — FastAPI Backend
-====================================
-Runs locally or on Render.com
+Notification MVP — FastAPI + Supabase Backend
+===============================================
+- Reads user data from Supabase (replaces CSV files)
+- Makes 5 parallel Gemini calls
+- Saves generated notifications to Supabase
+- Also saves to local outputs_v3/ JSON (kept as backup)
 
 Local run:
   pip install -r requirements.txt
   uvicorn main:app --reload --port 8000
 
 Render:
-  Build command : pip install -r requirements.txt
-  Start command : uvicorn main:app --host 0.0.0.0 --port 10000
+  Build : pip install -r requirements.txt
+  Start : uvicorn main:app --host 0.0.0.0 --port 10000
 """
 
-import os, sys, json, asyncio
+import os, json, asyncio
 from pathlib import Path
 from datetime import datetime
 
 import httpx
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from supabase import create_client, Client
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # ──────────────────────────────────────────────
-# CONFIG  (set these in .env or Render env vars)
+# ENV
 # ──────────────────────────────────────────────
 
-METADATA_FILE = os.getenv("METADATA_FILE", r"C:\Users\vivaa\OneDrive\Desktop\ZEEX HPNS\metadata.csv")
-SCORE_FILE    = os.getenv("SCORE_FILE",    r"C:\Users\vivaa\OneDrive\Desktop\ZEEX HPNS\final_table.csv")
+SUPABASE_URL  = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY  = os.getenv("SUPABASE_KEY", "")   # use service_role key
 GEMINI_KEY    = os.getenv("GEMINI_API_KEY", "")
-GEMINI_URL    = (
+
+GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/"
     "models/gemini-2.5-flash:generateContent"
 )
 
-if not GEMINI_KEY:
-    print("[WARN] GEMINI_API_KEY not set — requests will fail")
+# Supabase table names — must match what you created
+TABLE_USERS         = "users"               # single table — all columns from Excel
+TABLE_NOTIFICATIONS = "generated_notifications"
+
+OUTPUT_DIR = Path("outputs_v3")
 
 # ──────────────────────────────────────────────
 # ID → LABEL MAPS
@@ -68,52 +74,139 @@ SCHEME_CATALOGUE = [
 ]
 
 # ──────────────────────────────────────────────
-# DATA HELPERS
+# SEGMENT METADATA
 # ──────────────────────────────────────────────
 
-def read_csv(path: str) -> pd.DataFrame:
-    p = Path(path)
-    if not p.exists():
-        raise FileNotFoundError(f"File not found: {path}")
-    return pd.read_csv(path, dtype=str) if path.endswith(".csv") else pd.read_excel(path, dtype=str)
+SEGMENT_META = {
+    "content_reader": {
+        "label":                   "Content Reader",
+        "traits":                  ["High article clicks & views", "Long engagement time"],
+        "notification_responsive": "12.1%",
+        "segment_pct":             "45.8%",
+        "color":                   "#3b82f6",
+        "is_best":                 False,
+    },
+    "high_converter": {
+        "label":                   "High Converter",
+        "traits":                  ["Contact clicks & enquiries", "Completed submissions"],
+        "notification_responsive": "34.2%",
+        "segment_pct":             "18.0%",
+        "color":                   "#22c55e",
+        "is_best":                 True,
+    },
+    "job_hunter": {
+        "label":                   "Job Hunter",
+        "traits":                  ["Job card & option clicks", "Job-focused browsing"],
+        "notification_responsive": "15.7%",
+        "segment_pct":             "16.3%",
+        "color":                   "#f59e0b",
+        "is_best":                 False,
+    },
+    "scheme_seeker": {
+        "label":                   "Scheme Seeker",
+        "traits":                  ["Scheme & category clicks", "Profile completion intent"],
+        "notification_responsive": "9.8%",
+        "segment_pct":             "10.9%",
+        "color":                   "#8b5cf6",
+        "is_best":                 False,
+    },
+    "service_explorer": {
+        "label":                   "Service Explorer",
+        "traits":                  ["Service & sub-service clicks", "Deep service navigation"],
+        "notification_responsive": "14.3%",
+        "segment_pct":             "8.9%",
+        "color":                   "#ef4444",
+        "is_best":                 False,
+    },
+}
 
+# ──────────────────────────────────────────────
+# SUPABASE CLIENT
+# ──────────────────────────────────────────────
 
-def get_rows(df: pd.DataFrame, uid: str, label: str) -> pd.DataFrame:
-    col = "user_id"
-    if col not in df.columns:
-        raise ValueError(f"'user_id' column missing in {label}")
-    df[col] = df[col].astype(str).str.strip()
-    rows = df[df[col] == uid.strip()]
-    if rows.empty:
-        raise ValueError(f"user_id={uid} not found in {label}")
-    return rows
+def get_supabase() -> Client:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError("SUPABASE_URL or SUPABASE_KEY not set in environment")
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ──────────────────────────────────────────────
+# DATA FETCHER — single table
+# ──────────────────────────────────────────────
 
-def aggregate(df: pd.DataFrame) -> dict:
-    out = {}
-    for c in df.columns:
-        vals = df[c].dropna().tolist()
-        if not vals:
-            continue
-        try:
-            nums = [float(v) for v in vals]
-            out[c] = round(sum(nums) / len(nums), 2)
-        except:
-            out[c] = max(set(vals), key=vals.count)
-    return out
+def fetch_user_data(uid: str) -> dict:
+    """Fetch one user row from the single `users` table."""
+    sb  = get_supabase()
+    res = (
+        sb.table(TABLE_USERS)
+        .select("*")
+        .eq("user_id", uid)
+        .execute()
+    )
+    if not res.data:
+        raise ValueError(f"user_id={uid} not found in table '{TABLE_USERS}'")
+    return res.data[0]
 
+# ──────────────────────────────────────────────
+# PROFILE RESOLVER
+# ──────────────────────────────────────────────
 
 def resolve(u: dict) -> dict:
-    p = dict(u)
-    p["district"]             = DISTRICT_MAP.get(str(p.get("district_id","")), p.get("district_id","Unknown"))
-    p["personal_income"]      = PERSONAL_INCOME_MAP.get(str(p.get("personal_income_id","")), "Unknown")
-    p["family_income"]        = FAMILY_INCOME_MAP.get(str(p.get("family_income_id","")), "Unknown")
-    p["earner_role"]          = FAMILY_TYPE_MAP.get(str(p.get("family_type_id","")), "Unknown")
-    p["bpl"]                  = BPL_MAP.get(str(p.get("bpl_category","0")), "No")
-    p["language"]             = LANG_MAP.get(str(p.get("preferred_language","en")).strip(), "English")
-    p["language_code"]        = str(p.get("preferred_language","en")).strip()
+    p = {k: str(v) if v is not None else "" for k, v in u.items()}
+    p["district"]             = DISTRICT_MAP.get(p.get("district_id",""), p.get("district_id","Unknown"))
+    p["personal_income"]      = PERSONAL_INCOME_MAP.get(p.get("personal_income_id",""), "Unknown")
+    p["family_income"]        = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
+    p["earner_role"]          = FAMILY_TYPE_MAP.get(p.get("family_type_id",""), "Unknown")
+    p["bpl"]                  = BPL_MAP.get(p.get("bpl_category","0"), "No")
+    p["language"]             = LANG_MAP.get(p.get("preferred_language","en").strip(), "English")
+    p["language_code"]        = p.get("preferred_language","en").strip()
     p["available_scheme_ids"] = ", ".join(SCHEME_CATALOGUE)
     return p
+
+# ──────────────────────────────────────────────
+# SEGMENT CLASSIFIER
+# ──────────────────────────────────────────────
+
+def classify_segment(profile: dict) -> dict:
+    """Return segment dict for this user.
+    Priority: primary_category field → score comparison → fallback.
+    """
+    def safe_float(val):
+        try:    return float(val or 0)
+        except: return 0.0
+
+    # 1. Try direct mapping from primary_category field
+    raw = str(profile.get("primary_category", "")).strip().lower().replace(" ", "_")
+    direct = {
+        "content_reader":   "content_reader",
+        "content":          "content_reader",
+        "high_converter":   "high_converter",
+        "converter":        "high_converter",
+        "job_hunter":       "job_hunter",
+        "job":              "job_hunter",
+        "scheme_seeker":    "scheme_seeker",
+        "scheme":           "scheme_seeker",
+        "service_explorer": "service_explorer",
+        "service":          "service_explorer",
+    }
+    for key, seg in direct.items():
+        if key in raw:
+            return {"segment_key": seg, **SEGMENT_META[seg]}
+
+    # 2. Score comparison fallback
+    scores = {
+        "content_reader":   safe_float(profile.get("content_score")),
+        "scheme_seeker":    safe_float(profile.get("scheme_score")),
+        "job_hunter":       safe_float(profile.get("job_score")),
+        "service_explorer": safe_float(profile.get("service_score")),
+    }
+    # High converter: high notification clicks + engagement
+    n_clicks   = safe_float(profile.get("notification_click"))
+    engagement = safe_float(profile.get("engagement_time_msec"))
+    if n_clicks > 5 and engagement > 60000:
+        scores["high_converter"] = n_clicks * 1000 + engagement * 0.1
+
+    best = max(scores, key=scores.get)
+    return {"segment_key": best, **SEGMENT_META[best]}
 
 # ──────────────────────────────────────────────
 # PROMPT BUILDER
@@ -131,8 +224,8 @@ You write like a real person who cares.
 THIS IS NOTIFICATION {n} OF 5
 This is a fully independent call. You have no memory of
 the other 4 notifications. Based ONLY on the user data
-below, create a completely unique notification with a
-fresh angle, different scheme if possible, different hook.
+below, create a completely unique notification — fresh
+angle, different scheme if possible, different hook.
 ════════════════════════════════════
 
 USER DATA:
@@ -182,10 +275,10 @@ OUTPUT — strict JSON only. No markdown. No explanation.
 """
 
 # ──────────────────────────────────────────────
-# GEMINI ASYNC CALL
+# GEMINI ASYNC
 # ──────────────────────────────────────────────
 
-async def call_gemini_async(client: httpx.AsyncClient, prompt: str, n: int) -> dict:
+async def call_gemini(client: httpx.AsyncClient, prompt: str, n: int) -> dict:
     r = await client.post(
         GEMINI_URL,
         headers={"x-goog-api-key": GEMINI_KEY},
@@ -194,8 +287,6 @@ async def call_gemini_async(client: httpx.AsyncClient, prompt: str, n: int) -> d
     )
     r.raise_for_status()
     raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-    # strip markdown fences if any
     clean = raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     try:
         return json.loads(clean)
@@ -203,14 +294,52 @@ async def call_gemini_async(client: httpx.AsyncClient, prompt: str, n: int) -> d
         return {"notification_number": n, "raw": raw, "parse_error": True}
 
 # ──────────────────────────────────────────────
-# FASTAPI APP
+# SAVE — Supabase + local JSON
+# ──────────────────────────────────────────────
+
+def save_to_supabase(user_id: str, notifications: list):
+    """Save all 5 notifications as rows in generated_notifications table."""
+    sb = get_supabase()
+    ts = datetime.now().isoformat()
+    rows = []
+    for n in notifications:
+        rows.append({
+            "user_id"              : user_id,
+            "generated_at"         : ts,
+            "notification_number"  : n.get("notification_number"),
+            "title"                : n.get("title",""),
+            "body"                 : n.get("body",""),
+            "language"             : n.get("language",""),
+            "scheme_or_service_id" : n.get("scheme_or_service_id",""),
+            "tone_used"            : n.get("tone_used",""),
+            "human_check"          : n.get("human_check",""),
+            "relevance_rationale"  : n.get("relevance_rationale",""),
+            "data_signals_used"    : n.get("data_signals_used",""),
+        })
+    sb.table(TABLE_NOTIFICATIONS).insert(rows).execute()
+
+
+def save_to_json(user_id: str, profile: dict, notifications: list):
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    ts  = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out = OUTPUT_DIR / f"output_{user_id}_{ts}.json"
+    out.write_text(json.dumps({
+        "timestamp"    : ts,
+        "user_id"      : user_id,
+        "profile"      : profile,
+        "notifications": notifications,
+    }, indent=2, ensure_ascii=False))
+    return out
+
+# ──────────────────────────────────────────────
+# FASTAPI
 # ──────────────────────────────────────────────
 
 app = FastAPI(title="Notification MVP")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten after deploy
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -218,56 +347,63 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Notification MVP backend running"}
+    return {"status": "ok"}
 
 
 @app.get("/notify/{user_id}")
 async def get_notifications(user_id: str):
-    try:
-        meta_df  = read_csv(METADATA_FILE)
-        score_df = read_csv(SCORE_FILE)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
+    # 1. fetch from Supabase
     try:
-        meta_user  = aggregate(get_rows(meta_df,  user_id, "metadata"))
-        score_user = aggregate(get_rows(score_df, user_id, "scores"))
+        raw_user = fetch_user_data(user_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    user    = {**meta_user, **score_user}
-    profile = resolve(user)
+    # 2. resolve IDs → labels
+    profile = resolve(raw_user)
 
-    # fire 5 calls in parallel
+    # 3. classify segment
+    segment = classify_segment(profile)
+
+    # 4. 5 parallel Gemini calls
     async with httpx.AsyncClient() as client:
-        tasks = [
-            call_gemini_async(client, build_prompt(profile, n), n)
+        notifications = list(await asyncio.gather(*[
+            call_gemini(client, build_prompt(profile, n), n)
             for n in range(1, 6)
-        ]
-        notifications = await asyncio.gather(*tasks)
+        ]))
 
-    # ── RESPONSE FORMAT ──────────────────────────────────────
-    # notifications first, then metadata below
+    # 5. save — Supabase + JSON
+    try:
+        save_to_supabase(user_id, notifications)
+    except Exception as e:
+        print(f"[WARN] Supabase save failed: {e}")
+
+    save_to_json(user_id, profile, notifications)
+
+    # 6. return — segment + notifications + profile
     return {
-        "user_id"       : user_id,
-        "generated_at"  : datetime.now().isoformat(),
-        "notifications" : list(notifications),          # 5 items, top
-        "user_profile"  : {                             # metadata below
-            "name"              : profile.get("name",""),
-            "age"               : profile.get("age",""),
-            "location"          : profile.get("district",""),
-            "language"          : profile.get("language",""),
-            "personal_income"   : profile.get("personal_income",""),
-            "family_income"     : profile.get("family_income",""),
-            "earner_role"       : profile.get("earner_role",""),
-            "bpl"               : profile.get("bpl",""),
-            "primary_category"  : profile.get("primary_category",""),
-            "notification_tag"  : profile.get("notification_tag",""),
+        "user_id"      : user_id,
+        "generated_at" : datetime.now().isoformat(),
+        "user_segment" : segment,
+        "notifications": notifications,
+        "user_profile" : {
+            "name"               : profile.get("name",""),
+            "age"                : profile.get("age",""),
+            "location"           : profile.get("district",""),
+            "language"           : profile.get("language",""),
+            "personal_income"    : profile.get("personal_income",""),
+            "family_income"      : profile.get("family_income",""),
+            "earner_role"        : profile.get("earner_role",""),
+            "bpl"                : profile.get("bpl",""),
+            "primary_category"   : profile.get("primary_category",""),
+            "notification_tag"   : profile.get("notification_tag",""),
             "notification_clicks": profile.get("notification_click",""),
-            "engagement_ms"     : profile.get("engagement_time_msec",""),
-            "content_score"     : profile.get("content_score",""),
-            "scheme_score"      : profile.get("scheme_score",""),
-            "job_score"         : profile.get("job_score",""),
-            "service_score"     : profile.get("service_score",""),
+            "engagement_ms"      : profile.get("engagement_time_msec",""),
+            "content_score"      : profile.get("content_score",""),
+            "scheme_score"       : profile.get("scheme_score",""),
+            "job_score"          : profile.get("job_score",""),
+            "service_score"      : profile.get("service_score",""),
         },
     }
