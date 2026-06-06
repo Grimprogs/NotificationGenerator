@@ -214,54 +214,55 @@ def fetch_schemes() -> list[dict]:
 def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
     sb = get_sb()
-
-    user_id = str(user_id)
     ts = datetime.now().isoformat()
 
-    # remove old notifications first
+    rows = []
+
+    for n in notifications:
+
+        rows.append({
+            "user_id": str(user_id),
+
+            "notification_number":
+                n.get("notification_number"),
+
+            "generated_at":
+                ts,
+
+            "segment_key":
+                segment_key,
+
+            "title":
+                n.get("title", ""),
+
+            "body":
+                n.get("body", ""),
+
+            "language":
+                n.get("language", ""),
+
+            "scheme_id":
+                n.get("scheme_id", ""),
+
+            "scheme_name":
+                n.get("scheme_name", ""),
+
+            "dependency_vector_used":
+                n.get("dependency_vector_used", ""),
+
+            "attention_strategy":
+                n.get("attention_strategy", ""),
+
+            "relevance_rationale":
+                n.get("relevance_rationale", ""),
+        })
+
     (
         sb.table(TABLE_NOTIFICATIONS)
-        .delete()
-        .eq("user_id", user_id)
-        .execute()
-    )
-
-    rows = [{
-        "user_id": user_id,
-        "generated_at": ts,
-        "segment_key": segment_key,
-
-        "notification_number":
-            n.get("notification_number"),
-
-        "title":
-            n.get("title", ""),
-
-        "body":
-            n.get("body", ""),
-
-        "language":
-            n.get("language", ""),
-
-        "scheme_id":
-            n.get("scheme_id", ""),
-
-        "scheme_name":
-            n.get("scheme_name", ""),
-
-        "dependency_vector_used":
-            n.get("dependency_vector_used", ""),
-
-        "attention_strategy":
-            n.get("attention_strategy", ""),
-
-        "relevance_rationale":
-            n.get("relevance_rationale", ""),
-    } for n in notifications]
-
-    (
-        sb.table(TABLE_NOTIFICATIONS)
-        .insert(rows)
+        .upsert(
+            rows,
+            on_conflict="user_id,notification_number"
+        )
         .execute()
     )
 # ──────────────────────────────────────────────
