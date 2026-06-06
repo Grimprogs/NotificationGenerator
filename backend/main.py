@@ -174,13 +174,29 @@ def get_sb() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+#def fetch_user(uid: str) -> dict:
+#    sb  = get_sb()
+#    res = sb.table(TABLE_USERS).select("*").eq("user_id", uid).execute()
+#    if not res.data:
+#        raise ValueError(f"user_id={uid} not found in table '{TABLE_USERS}'")
+#    return res.data[0]
 def fetch_user(uid: str) -> dict:
-    sb  = get_sb()
-    res = sb.table(TABLE_USERS).select("*").eq("user_id", uid).execute()
-    if not res.data:
-        raise ValueError(f"user_id={uid} not found in table '{TABLE_USERS}'")
-    return res.data[0]
+    sb = get_sb()
 
+    res = (
+        sb.table(TABLE_USERS)
+        .select("*")
+        .eq("user_id", uid)
+        .execute()
+    )
+
+    print("\n===== SUPABASE RAW =====")
+    print(res.data)
+
+    if not res.data:
+        raise ValueError("not found")
+
+    return res.data[0]
 
 def fetch_schemes() -> list[dict]:
     """Fetch all active schemes from Supabase schemes table."""
@@ -235,7 +251,7 @@ def resolve(u: dict) -> dict:
         str(int(float(p.get("family_type_id", 0)))),
         "Unknown"
     )
-    p["personal_income"] = p.get("personal_income_id","")
+    p["personal_income"] = PERSONAL_INCOME_MAP.get(p.get("personal_income_id",""), "Unknown")
     #p["family_income"]   = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
     #p["earner_role"]     = FAMILY_TYPE_MAP.get(p.get("family_type_id",""), "Unknown")
     p["bpl"]             = BPL_MAP.get(p.get("bpl_category","0"), "No")
