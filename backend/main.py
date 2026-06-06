@@ -62,11 +62,11 @@ DISTRICT_MAP = {
 PERSONAL_INCOME_MAP = {
     "2": "Up to ₹10,000",
     "3": "₹10,001 to ₹20,000",
-    "4.": "₹20,001 to ₹30,000",
+    "4": "₹20,001 to ₹30,000",
     "5": "₹30,001 to ₹40,000",
     "6": "₹40,001 to ₹50,000",
     "7": "₹50,001 to ₹75,000",
-    "8.": "₹75,001 to ₹1 Lakh",
+    "8": "₹75,001 to ₹1 Lakh",
     "9": "₹1.01 Lakh to ₹1.5 Lakh",
     "10": "₹1.51 Lakh to ₹2 Lakh",
     "11": "₹2.01 Lakh to ₹2.5 Lakh",
@@ -77,11 +77,11 @@ PERSONAL_INCOME_MAP = {
 FAMILY_INCOME_MAP = {
     "2": "Up to ₹10,000",
     "3": "₹10,001 to ₹20,000",
-    "4.": "₹20,001 to ₹30,000",
+    "4": "₹20,001 to ₹30,000",
     "5": "₹30,001 to ₹40,000",
     "6": "₹40,001 to ₹50,000",
     "7": "₹50,001 to ₹75,000",
-    "8.": "₹75,001 to ₹1 Lakh",
+    "8": "₹75,001 to ₹1 Lakh",
     "9": "₹1.01 Lakh to ₹1.5 Lakh",
     "10": "₹1.51 Lakh to ₹2 Lakh",
     "11": "₹2.01 Lakh to ₹2.5 Lakh",
@@ -235,7 +235,7 @@ def resolve(u: dict) -> dict:
         str(int(float(p.get("family_type_id", 0)))),
         "Unknown"
     )
-    p["personal_income"] = PERSONAL_INCOME_MAP.get(p.get("personal_income_id",""), "Unknown")
+    p["personal_income"] = p.get("personal_income_id","")
     #p["family_income"]   = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
     #p["earner_role"]     = FAMILY_TYPE_MAP.get(p.get("family_type_id",""), "Unknown")
     p["bpl"]             = BPL_MAP.get(p.get("bpl_category","0"), "No")
