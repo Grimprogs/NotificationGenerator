@@ -188,7 +188,7 @@ def fetch_schemes() -> list[dict]:
     return res.data or []
 
 
-def save_to_supabase(user_id: str, segment_key: str, notifications: list):
+'''def save_to_supabase(user_id: str, segment_key: str, notifications: list):
     sb  = get_sb()
     ts  = datetime.now().isoformat()
     sb.table(TABLE_NOTIFICATIONS) \
@@ -210,8 +210,54 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
         "attention_strategy":    n.get("attention_strategy", ""),
         "relevance_rationale":   n.get("relevance_rationale", ""),
     } for n in notifications]
-    sb.table(TABLE_NOTIFICATIONS).insert(rows).execute()
+    sb.table(TABLE_NOTIFICATIONS).insert(rows).execute()'''
+def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
+    sb = get_sb()
+    ts = datetime.now().isoformat()
+
+    user_id = str(user_id)
+
+    # DELETE OLD NOTIFICATIONS FOR THIS USER
+    deleted = (
+        sb.table(TABLE_NOTIFICATIONS)
+        .delete()
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    print("Deleted rows:", deleted.data)
+
+    rows = [{
+        "user_id": user_id,
+        "generated_at": ts,
+        "segment_key": segment_key,
+        "notification_number": n.get("notification_number"),
+
+        "title": n.get("title", ""),
+        "body": n.get("body", ""),
+        "language": n.get("language", ""),
+
+        "scheme_id": n.get("scheme_id", ""),
+        "scheme_name": n.get("scheme_name", ""),
+
+        "dependency_vector_used":
+            n.get("dependency_vector_used", ""),
+
+        "attention_strategy":
+            n.get("attention_strategy", ""),
+
+        "relevance_rationale":
+            n.get("relevance_rationale", ""),
+    } for n in notifications]
+
+    inserted = (
+        sb.table(TABLE_NOTIFICATIONS)
+        .insert(rows)
+        .execute()
+    )
+
+    print("Inserted:", len(inserted.data))
 # ──────────────────────────────────────────────
 # PROFILE RESOLVER
 # ──────────────────────────────────────────────
@@ -295,7 +341,7 @@ Create a completely unique angle and choose a different scheme if possible.
 
 [DEMOGRAPHIC CONTEXT]
 User ID: {u.get("user_id","")} | Name: {u.get("name","")} | Age: {u.get("age","")} | Language: {u.get("language_code","en")}
-
+Transliterate all personal names, place names, and proper nouns also into the given language strictly.
 [FINANCIAL & DEPENDENCY MATRIX]
 Personal Income: {u.get("personal_income","")}
 Family Income: {u.get("family_income","")}
