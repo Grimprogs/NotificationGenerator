@@ -174,28 +174,11 @@ def get_sb() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-#def fetch_user(uid: str) -> dict:
-#    sb  = get_sb()
-#    res = sb.table(TABLE_USERS).select("*").eq("user_id", uid).execute()
-#    if not res.data:
-#        raise ValueError(f"user_id={uid} not found in table '{TABLE_USERS}'")
-#    return res.data[0]
 def fetch_user(uid: str) -> dict:
-    sb = get_sb()
-
-    res = (
-        sb.table(TABLE_USERS)
-        .select("*")
-        .eq("user_id", uid)
-        .execute()
-    )
-
-    print("\n===== SUPABASE RAW =====")
-    print(res.data)
-
+    sb  = get_sb()
+    res = sb.table(TABLE_USERS).select("*").eq("user_id", uid).execute()
     if not res.data:
-        raise ValueError("not found")
-
+        raise ValueError(f"user_id={uid} not found in table '{TABLE_USERS}'")
     return res.data[0]
 
 def fetch_schemes() -> list[dict]:
@@ -228,36 +211,6 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 # PROFILE RESOLVER
 # ──────────────────────────────────────────────
 
-'''def resolve(u: dict) -> dict:
-    def clean(v):
-        if v is None:
-            return ""
-        if isinstance(v, float) and v.is_integer():
-            return str(int(v))
-        return str(v).strip()
-    p = {k: clean(v) for k, v in u.items()}
-    #p["district"]        = DISTRICT_MAP.get(p.get("district_id",""), p.get("district_id","Unknown"))
-    p["district"] = DISTRICT_MAP.get(
-        str(int(float(p.get("district_id", 0)))),
-        "Unknown"
-    )
-
-    p["family_income"] = FAMILY_INCOME_MAP.get(
-        str(int(float(p.get("family_income_id", 0)))),
-        "Unknown"
-    )
-
-    p["earner_role"] = FAMILY_TYPE_MAP.get(
-        str(int(float(p.get("family_type_id", 0)))),
-        "Unknown"
-    )
-    p["personal_income"] = PERSONAL_INCOME_MAP.get(p.get("personal_income_id",""), "Unknown")
-    #p["family_income"]   = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
-    #p["earner_role"]     = FAMILY_TYPE_MAP.get(p.get("family_type_id",""), "Unknown")
-    p["bpl"]             = BPL_MAP.get(p.get("bpl_category","0"), "No")
-    p["language"]        = LANG_MAP.get(p.get("preferred_language","en").strip(), "English")
-    p["language_code"]   = p.get("preferred_language","en").strip()
-    return p'''
 def normalize_id(v):
     if v is None:
         return ""
@@ -278,17 +231,6 @@ def resolve(u: dict):
 
     # normalize everything first
     p = {k: normalize_id(v) for k, v in u.items()}
-
-    print("\n===== NORMALIZED =====")
-    print({
-        "district_id": p.get("district_id"),
-        "personal_income_id": p.get("personal_income_id"),
-        "family_income_id": p.get("family_income_id"),
-        "family_type_id": p.get("family_type_id"),
-        "bpl_category": p.get("bpl_category"),
-        "preferred_language": p.get("preferred_language"),
-    })
-
     # district
     p["district"] = DISTRICT_MAP.get(
         p.get("district_id"),
@@ -316,7 +258,7 @@ def resolve(u: dict):
     # BPL
     p["bpl"] = BPL_MAP.get(
         p.get("bpl_category", "").upper(),
-        "Noo"
+        "Not Available"
     )
 
     # language
@@ -324,17 +266,7 @@ def resolve(u: dict):
         p.get("preferred_language"),
         "English"
     )
-
-    print("\n===== FINAL MAPPING =====")
-    print({
-        "district": p["district"],
-        "personal_income": p["personal_income"],
-        "family_income": p["family_income"],
-        "earner_role": p["earner_role"],
-        "bpl": p["bpl"],
-        "language": p["language"],
-    })
-
+    p["language_code"]   = p.get("preferred_language","en").strip()
     return p
 
 # ──────────────────────────────────────────────
