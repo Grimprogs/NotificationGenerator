@@ -213,7 +213,13 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 # ──────────────────────────────────────────────
 
 def resolve(u: dict) -> dict:
-    p = {k: str(v) if v is not None else "" for k, v in u.items()}
+    def clean(v):
+        if v is None:
+            return ""
+        if isinstance(v, float) and v.is_integer():
+            return str(int(v))
+        return str(v).strip()
+    p = {k: clean(v) for k, v in u.items()}
     p["district"]        = DISTRICT_MAP.get(p.get("district_id",""), p.get("district_id","Unknown"))
     p["personal_income"] = PERSONAL_INCOME_MAP.get(p.get("personal_income_id",""), "Unknown")
     p["family_income"]   = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
