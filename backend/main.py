@@ -191,6 +191,11 @@ def fetch_schemes() -> list[dict]:
 def save_to_supabase(user_id: str, segment_key: str, notifications: list):
     sb  = get_sb()
     ts  = datetime.now().isoformat()
+    sb.table(TABLE_NOTIFICATIONS) \
+        .delete() \
+        .eq("user_id", user_id) \
+        .execute()
+    
     rows = [{
         "user_id":               user_id,
         "generated_at":          ts,
