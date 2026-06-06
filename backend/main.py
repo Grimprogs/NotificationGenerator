@@ -214,84 +214,49 @@ def fetch_schemes() -> list[dict]:
 def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
     sb = get_sb()
-
-    user_id = str(user_id)
     ts = datetime.now().isoformat()
 
-    # STEP 1 — verify existing rows
-    existing = (
+    rows = [{
+        "user_id": str(user_id),
+        "generated_at": ts,
+        "segment_key": segment_key,
+
+        "notification_number":
+            n.get("notification_number"),
+
+        "title":
+            n.get("title", ""),
+
+        "body":
+            n.get("body", ""),
+
+        "language":
+            n.get("language", ""),
+
+        "scheme_id":
+            n.get("scheme_id", ""),
+
+        "scheme_name":
+            n.get("scheme_name", ""),
+
+        "dependency_vector_used":
+            n.get("dependency_vector_used", ""),
+
+        "attention_strategy":
+            n.get("attention_strategy", ""),
+
+        "relevance_rationale":
+            n.get("relevance_rationale", ""),
+    } for n in notifications]
+
+    (
         sb.table(TABLE_NOTIFICATIONS)
-        .select("user_id,notification_number")
-        .eq("user_id", user_id)
+        .upsert(
+            rows,
+            on_conflict="user_id,notification_number"
+        )
         .execute()
     )
-
-    print("BEFORE DELETE:", len(existing.data))
-
-    # STEP 2 — delete old rows
-    delete_result = (
-        sb.table(TABLE_NOTIFICATIONS)
-        .delete()
-        .eq("user_id", user_id)
-        .execute()
-    )
-
-    print("DELETE RESULT:")
-    print(delete_result)
-
-    # STEP 3 — verify deletion actually happened
-    after = (
-        sb.table(TABLE_NOTIFICATIONS)
-        .select("user_id")
-        .eq("user_id", user_id)
-        .execute()
-    )
-
-    print("AFTER DELETE:", len(after.data))
-
-    rows = []
-
-    for n in notifications:
-        rows.append({
-            "user_id": user_id,
-            "generated_at": ts,
-            "segment_key": segment_key,
-
-            "notification_number":
-                n.get("notification_number"),
-
-            "title":
-                n.get("title", ""),
-
-            "body":
-                n.get("body", ""),
-
-            "language":
-                n.get("language", ""),
-
-            "scheme_id":
-                n.get("scheme_id", ""),
-
-            "scheme_name":
-                n.get("scheme_name", ""),
-
-            "dependency_vector_used":
-                n.get("dependency_vector_used", ""),
-
-            "attention_strategy":
-                n.get("attention_strategy", ""),
-
-            "relevance_rationale":
-                n.get("relevance_rationale", ""),
-        })
-
-    insert = (
-        sb.table(TABLE_NOTIFICATIONS)
-        .insert(rows)
-        .execute()
-    )
-
-    print("INSERTED:", len(insert.data))
 # ──────────────────────────────────────────────
 # PROFILE RESOLVER
 # ──────────────────────────────────────────────
