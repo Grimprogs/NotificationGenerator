@@ -228,7 +228,7 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 # PROFILE RESOLVER
 # ──────────────────────────────────────────────
 
-def resolve(u: dict) -> dict:
+'''def resolve(u: dict) -> dict:
     def clean(v):
         if v is None:
             return ""
@@ -257,7 +257,64 @@ def resolve(u: dict) -> dict:
     p["bpl"]             = BPL_MAP.get(p.get("bpl_category","0"), "No")
     p["language"]        = LANG_MAP.get(p.get("preferred_language","en").strip(), "English")
     p["language_code"]   = p.get("preferred_language","en").strip()
-    return p
+    return p'''
+def norm(v):
+    if v is None:
+        return ""
+
+    s = str(v).strip()
+
+    try:
+        if float(s).is_integer():
+            return str(int(float(s)))
+    except:
+        pass
+
+    return s
+
+
+def resolve(u: dict):
+
+    p = {k: norm(v) for k, v in u.items()}
+
+    print("\nNORMALIZED")
+    print({
+        "personal_income_id": p.get("personal_income_id"),
+        "family_income_id": p.get("family_income_id"),
+        "family_type_id": p.get("family_type_id"),
+    })
+
+    p["district"] = DISTRICT_MAP.get(
+        p.get("district_id"),
+        p.get("district_id")
+    )
+
+    p["personal_income"] = PERSONAL_INCOME_MAP.get(
+        p.get("personal_income_id"),
+        p.get("personal_income_id")
+    )
+
+    p["family_income"] = FAMILY_INCOME_MAP.get(
+        p.get("family_income_id"),
+        p.get("family_income_id")
+    )
+
+    p["earner_role"] = FAMILY_TYPE_MAP.get(
+        p.get("family_type_id"),
+        p.get("family_type_id")
+    )
+
+    p["bpl"] = BPL_MAP.get(
+        p.get("bpl_category"),
+        "No"
+    )
+
+    p["language"] = LANG_MAP.get(
+        p.get("preferred_language"),
+        "English"
+    )
+
+    return p 
 
 # ──────────────────────────────────────────────
 # PROMPT  (new advanced prompt)
