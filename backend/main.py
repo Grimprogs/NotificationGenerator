@@ -243,13 +243,15 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
     sb = get_sb()
 
-    user_id = str(user_id)
+    # IMPORTANT
+    user_id = int(float(user_id))
+
     ts = datetime.now().isoformat()
 
-    # DELETE ALL OLD NOTIFICATIONS FIRST
-    sb.table(TABLE_NOTIFICATIONS)\
-        .delete()\
-        .eq("user_id", user_id)\
+    # delete old rows
+    sb.table(TABLE_NOTIFICATIONS) \
+        .delete() \
+        .eq("user_id", user_id) \
         .execute()
 
     rows = []
@@ -258,9 +260,12 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
         rows.append({
             "user_id": user_id,
-            "generated_at": ts,
 
-            "segment_key": segment_key,
+            "generated_at":
+                ts,
+
+            "segment_key":
+                segment_key,
 
             "notification_number":
                 n.get("notification_number"),
@@ -287,11 +292,11 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
                 n.get("attention_strategy", ""),
 
             "relevance_rationale":
-                n.get("relevance_rationale", "")
+                n.get("relevance_rationale", ""),
         })
 
-    sb.table(TABLE_NOTIFICATIONS)\
-        .insert(rows)\
+    sb.table(TABLE_NOTIFICATIONS) \
+        .insert(rows) \
         .execute()
 # ──────────────────────────────────────────────
 # PROFILE RESOLVER
