@@ -220,10 +220,24 @@ def resolve(u: dict) -> dict:
             return str(int(v))
         return str(v).strip()
     p = {k: clean(v) for k, v in u.items()}
-    p["district"]        = DISTRICT_MAP.get(p.get("district_id",""), p.get("district_id","Unknown"))
+    #p["district"]        = DISTRICT_MAP.get(p.get("district_id",""), p.get("district_id","Unknown"))
+    p["district"] = DISTRICT_MAP.get(
+        str(int(float(p.get("district_id", 0)))),
+        "Unknown"
+    )
+
+    p["family_income"] = FAMILY_INCOME_MAP.get(
+        str(int(float(p.get("family_income_id", 0)))),
+        "Unknown"
+    )
+
+    p["earner_role"] = FAMILY_TYPE_MAP.get(
+        str(int(float(p.get("family_type_id", 0)))),
+        "Unknown"
+    )
     p["personal_income"] = PERSONAL_INCOME_MAP.get(p.get("personal_income_id",""), "Unknown")
-    p["family_income"]   = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
-    p["earner_role"]     = FAMILY_TYPE_MAP.get(p.get("family_type_id",""), "Unknown")
+    #p["family_income"]   = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
+    #p["earner_role"]     = FAMILY_TYPE_MAP.get(p.get("family_type_id",""), "Unknown")
     p["bpl"]             = BPL_MAP.get(p.get("bpl_category","0"), "No")
     p["language"]        = LANG_MAP.get(p.get("preferred_language","en").strip(), "English")
     p["language_code"]   = p.get("preferred_language","en").strip()
