@@ -1,0 +1,20 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0a0a0f;
+  --surface:  #111118;
+  --border:   #1e1e2e;
+  --accent:   #6ee7b7;
+  --accent2:  #818cf8;
+  --warn:     #fb923c;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --card:     #13131d;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+}

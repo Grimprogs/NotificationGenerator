@@ -1,0 +1,48 @@
+# ── SECRETS — never commit these ──────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Python ────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+pip-log.txt
+*.egg-info/
+dist/
+build/
+*.so
+
+# ── Node / Frontend ───────────────────────────────
+node_modules/
+dist/
+.cache/
+.parcel-cache/
+*.local
+
+# ── Data files — keep CSVs off GitHub if sensitive
+# Comment these out if you WANT to push the CSVs
+*.csv
+*.xlsx
+*.xls
+
+# ── Output files ──────────────────────────────────
+outputs/
+outputs_v2/
+outputs_v3/
+outputs_new/
+# ── OS garbage ────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
