@@ -47,19 +47,51 @@ DISTRICT_MAP = {
     "5":"Aurangabad","6":"Thane","7":"Kolhapur","8":"Solapur",
 }
 PERSONAL_INCOME_MAP = {
-    "1":"No income","2":"Below 5000/month",
-    "3":"5000-10000/month","4":"10000-25000/month",
-    "5":"25000-50000/month","6":"Above 50000/month",
+    "2": "Up to ₹10,000",
+    "3": "₹10,001 to ₹20,000",
+    "4": "₹20,001 to ₹30,000",
+    "5": "₹30,001 to ₹40,000",
+    "6": "₹40,001 to ₹50,000",
+    "7": "₹50,001 to ₹75,000",
+    "8": "₹75,001 to ₹1 Lakh",
+    "9": "₹1.01 Lakh to ₹1.5 Lakh",
+    "10": "₹1.51 Lakh to ₹2 Lakh",
+    "11": "₹2.01 Lakh to ₹2.5 Lakh",
+    "12": "₹2.51 Lakh to ₹3 Lakh",
+    "13": "More than ₹3 Lakh",
+    "14": "Prefer not to answer",
 }
 FAMILY_INCOME_MAP = {
-    "1":"Below 1 lakh/year","2":"1-3 lakh/year",
-    "3":"3-6 lakh/year","4":"6-10 lakh/year",
-    "5":"Above 10 lakh/year",
+    "2": "Up to ₹10,000",
+    "3": "₹10,001 to ₹20,000",
+    "4": "₹20,001 to ₹30,000",
+    "5": "₹30,001 to ₹40,000",
+    "6": "₹40,001 to ₹50,000",
+    "7": "₹50,001 to ₹75,000",
+    "8": "₹75,001 to ₹1 Lakh",
+    "9": "₹1.01 Lakh to ₹1.5 Lakh",
+    "10": "₹1.51 Lakh to ₹2 Lakh",
+    "11": "₹2.01 Lakh to ₹2.5 Lakh",
+    "12": "₹2.51 Lakh to ₹3 Lakh",
+    "13": "More than ₹3 Lakh",
+    "14": "Prefer not to answer",
 }
-FAMILY_TYPE_MAP = {"1":"Sole Earner","2":"Co Earner","3":"Partial Earner"}
-BPL_MAP         = {"0":"No","1":"Yes"}
-LANG_MAP        = {"en":"English","mr":"Marathi","hi":"Hindi","pa":"Punjabi","ml":"Malayalam"}
-
+FAMILY_TYPE_MAP = {"2":"Partial Earner","3":"Partial Earner","4":"Partial Earner"}
+BPL_MAP         = {"FALSE":"No","TRUE":"Yes"}
+LANG_MAP = {
+    "mr": "Marathi",
+    "hi": "Hindi",
+    "en": "English",
+    "pa": "Punjabi",
+    "te": "Telugu",
+    "ta": "Tamil",
+    "as": "Assamese",
+    "ml": "Malayalam",
+    "bn": "Bengali",
+    "kn": "Kannada",
+    "gu": "Gujarati",
+    "or": "Odia",
+}
 # ==================================================
 # GEMINI KEY
 # ==================================================
