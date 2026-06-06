@@ -214,10 +214,20 @@ def fetch_schemes() -> list[dict]:
 def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
     sb = get_sb()
+
+    user_id = str(user_id)
     ts = datetime.now().isoformat()
 
+    # remove old notifications first
+    (
+        sb.table(TABLE_NOTIFICATIONS)
+        .delete()
+        .eq("user_id", user_id)
+        .execute()
+    )
+
     rows = [{
-        "user_id": str(user_id),
+        "user_id": user_id,
         "generated_at": ts,
         "segment_key": segment_key,
 
@@ -251,10 +261,7 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
     (
         sb.table(TABLE_NOTIFICATIONS)
-        .upsert(
-            rows,
-            on_conflict="user_id,notification_number"
-        )
+        .insert(rows)
         .execute()
     )
 # ──────────────────────────────────────────────
