@@ -214,50 +214,84 @@ def fetch_schemes() -> list[dict]:
 def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
     sb = get_sb()
-    ts = datetime.now().isoformat()
 
     user_id = str(user_id)
+    ts = datetime.now().isoformat()
 
-    # DELETE OLD NOTIFICATIONS FOR THIS USER
-    deleted = (
+    # STEP 1 — verify existing rows
+    existing = (
+        sb.table(TABLE_NOTIFICATIONS)
+        .select("user_id,notification_number")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    print("BEFORE DELETE:", len(existing.data))
+
+    # STEP 2 — delete old rows
+    delete_result = (
         sb.table(TABLE_NOTIFICATIONS)
         .delete()
         .eq("user_id", user_id)
         .execute()
     )
 
-    print("Deleted rows:", deleted.data)
+    print("DELETE RESULT:")
+    print(delete_result)
 
-    rows = [{
-        "user_id": user_id,
-        "generated_at": ts,
-        "segment_key": segment_key,
-        "notification_number": n.get("notification_number"),
+    # STEP 3 — verify deletion actually happened
+    after = (
+        sb.table(TABLE_NOTIFICATIONS)
+        .select("user_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
 
-        "title": n.get("title", ""),
-        "body": n.get("body", ""),
-        "language": n.get("language", ""),
+    print("AFTER DELETE:", len(after.data))
 
-        "scheme_id": n.get("scheme_id", ""),
-        "scheme_name": n.get("scheme_name", ""),
+    rows = []
 
-        "dependency_vector_used":
-            n.get("dependency_vector_used", ""),
+    for n in notifications:
+        rows.append({
+            "user_id": user_id,
+            "generated_at": ts,
+            "segment_key": segment_key,
 
-        "attention_strategy":
-            n.get("attention_strategy", ""),
+            "notification_number":
+                n.get("notification_number"),
 
-        "relevance_rationale":
-            n.get("relevance_rationale", ""),
-    } for n in notifications]
+            "title":
+                n.get("title", ""),
 
-    inserted = (
+            "body":
+                n.get("body", ""),
+
+            "language":
+                n.get("language", ""),
+
+            "scheme_id":
+                n.get("scheme_id", ""),
+
+            "scheme_name":
+                n.get("scheme_name", ""),
+
+            "dependency_vector_used":
+                n.get("dependency_vector_used", ""),
+
+            "attention_strategy":
+                n.get("attention_strategy", ""),
+
+            "relevance_rationale":
+                n.get("relevance_rationale", ""),
+        })
+
+    insert = (
         sb.table(TABLE_NOTIFICATIONS)
         .insert(rows)
         .execute()
     )
 
-    print("Inserted:", len(inserted.data))
+    print("INSERTED:", len(insert.data))
 # ──────────────────────────────────────────────
 # PROFILE RESOLVER
 # ──────────────────────────────────────────────
