@@ -174,13 +174,41 @@ def get_sb() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+#def fetch_user(uid: str) -> dict:
+#    sb  = get_sb()
+#    res = sb.table(TABLE_USERS).select("*").eq("user_id", uid).execute()
+#    if not res.data:
+#        raise ValueError(f"user_id={uid} not found in table '{TABLE_USERS}'")
+#    return res.data[0]
+#
 def fetch_user(uid: str) -> dict:
-    sb  = get_sb()
-    res = sb.table(TABLE_USERS).select("*").eq("user_id", uid).execute()
-    if not res.data:
-        raise ValueError(f"user_id={uid} not found in table '{TABLE_USERS}'")
-    return res.data[0]
 
+    sb = get_sb()
+
+    uid = str(uid).strip()
+
+    # try exact match
+    res = (
+        sb.table(TABLE_USERS)
+        .select("*")
+        .eq("user_id", uid)
+        .execute()
+    )
+
+    # fallback → try float-style id
+    if not res.data:
+
+        res = (
+            sb.table(TABLE_USERS)
+            .select("*")
+            .eq("user_id", f"{uid}.0")
+            .execute()
+        )
+
+    if not res.data:
+        raise ValueError("not found")
+
+    return res.data[0]
 def fetch_schemes() -> list[dict]:
     """Fetch all active schemes from Supabase schemes table."""
     sb  = get_sb()
