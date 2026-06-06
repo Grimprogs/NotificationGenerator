@@ -258,13 +258,14 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
     p["language"]        = LANG_MAP.get(p.get("preferred_language","en").strip(), "English")
     p["language_code"]   = p.get("preferred_language","en").strip()
     return p'''
-def norm(v):
+def normalize_id(v):
     if v is None:
         return ""
 
     s = str(v).strip()
 
     try:
+        # converts "3.0" → "3"
         if float(s).is_integer():
             return str(int(float(s)))
     except:
@@ -275,46 +276,66 @@ def norm(v):
 
 def resolve(u: dict):
 
-    p = {k: norm(v) for k, v in u.items()}
+    # normalize everything first
+    p = {k: normalize_id(v) for k, v in u.items()}
 
-    print("\nNORMALIZED")
+    print("\n===== NORMALIZED =====")
     print({
+        "district_id": p.get("district_id"),
         "personal_income_id": p.get("personal_income_id"),
         "family_income_id": p.get("family_income_id"),
         "family_type_id": p.get("family_type_id"),
+        "bpl_category": p.get("bpl_category"),
+        "preferred_language": p.get("preferred_language"),
     })
 
+    # district
     p["district"] = DISTRICT_MAP.get(
         p.get("district_id"),
-        p.get("district_id")
+        "Unknown"
     )
 
+    # personal income
     p["personal_income"] = PERSONAL_INCOME_MAP.get(
         p.get("personal_income_id"),
-        p.get("personal_income_id")
+        "Unknown"
     )
 
+    # family income
     p["family_income"] = FAMILY_INCOME_MAP.get(
         p.get("family_income_id"),
-        p.get("family_income_id")
+        "Unknown"
     )
 
+    # earner role
     p["earner_role"] = FAMILY_TYPE_MAP.get(
         p.get("family_type_id"),
-        p.get("family_type_id")
+        "Unknown"
     )
 
+    # BPL
     p["bpl"] = BPL_MAP.get(
-        p.get("bpl_category"),
-        "No"
+        p.get("bpl_category", "").upper(),
+        "Noo"
     )
 
+    # language
     p["language"] = LANG_MAP.get(
         p.get("preferred_language"),
         "English"
     )
 
-    return p 
+    print("\n===== FINAL MAPPING =====")
+    print({
+        "district": p["district"],
+        "personal_income": p["personal_income"],
+        "family_income": p["family_income"],
+        "earner_role": p["earner_role"],
+        "bpl": p["bpl"],
+        "language": p["language"],
+    })
+
+    return p
 
 # ──────────────────────────────────────────────
 # PROMPT  (new advanced prompt)
