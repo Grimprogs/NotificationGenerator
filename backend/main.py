@@ -242,23 +242,28 @@ def fetch_schemes() -> list[dict]:
 def save_to_supabase(user_id: str, segment_key: str, notifications: list):
 
     sb = get_sb()
+
+    user_id = str(user_id)
     ts = datetime.now().isoformat()
+
+    # DELETE ALL OLD NOTIFICATIONS FIRST
+    sb.table(TABLE_NOTIFICATIONS)\
+        .delete()\
+        .eq("user_id", user_id)\
+        .execute()
 
     rows = []
 
     for n in notifications:
 
         rows.append({
-            "user_id": str(user_id),
+            "user_id": user_id,
+            "generated_at": ts,
+
+            "segment_key": segment_key,
 
             "notification_number":
                 n.get("notification_number"),
-
-            "generated_at":
-                ts,
-
-            "segment_key":
-                segment_key,
 
             "title":
                 n.get("title", ""),
@@ -282,17 +287,12 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
                 n.get("attention_strategy", ""),
 
             "relevance_rationale":
-                n.get("relevance_rationale", ""),
+                n.get("relevance_rationale", "")
         })
 
-    (
-        sb.table(TABLE_NOTIFICATIONS)
-        .upsert(
-            rows,
-            on_conflict="user_id,notification_number"
-        )
+    sb.table(TABLE_NOTIFICATIONS)\
+        .insert(rows)\
         .execute()
-    )
 # ──────────────────────────────────────────────
 # PROFILE RESOLVER
 # ──────────────────────────────────────────────
