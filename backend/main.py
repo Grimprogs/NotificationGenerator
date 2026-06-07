@@ -235,8 +235,11 @@ You are free to use any bucket — including the same one multiple times across 
 ════════════════════════════════════
 RULES:
 - Write entirely in {u.get("language","English")} ({u.get("language_code","en")})
+- Convert all names and personal things also to the given language explicitly and it should be strictly in the given language.
 - Title: max 6 words. Body: max 15 words.
-- No emojis, hashtags, rupee symbol in title
+
+- Try and make the notification more catchy or interesting 
+- use emojis and humour as much as you need to make it eye catching /funny / interesting
 - Sound like a friend texting, not a government notice
 
 OUTPUT — raw JSON only. No markdown. No preamble.
