@@ -239,7 +239,7 @@ const KanbanColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilter 
       return 0
     })
     return items
-  }, [allNotifs, colSearch, sort, primaryFilter, segKey, userMap])
+  }, [allNotifs, colSearch, sort, primaryFilter, segKey, userMap, globalSearch])
 
   const modalUser = modal ? { segment_key: userMap[String(modal.user_id)] } : null
 
@@ -301,16 +301,60 @@ const KanbanColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilter 
   )
 }
 
+// ── USER LIST PANEL ──────────────────────────────────────────────────────────────
+
+const UserListPanel = ({ records }) => {
+  const [segFilter, setSegFilter] = useState("all")
+  const [search,    setSearch]    = useState("")
+
+  const filtered = useMemo(() => records.filter(u => {
+    const matchSeg = segFilter === "all" || u.segment_key === segFilter
+    const matchQ   = !search.trim() || String(u.user_id).includes(search.trim())
+    return matchSeg && matchQ
+  }), [records, segFilter, search])
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search user ID..."
+        style={{ padding:"8px 14px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:8, color:"var(--text)", fontSize:12, fontFamily:"'DM Mono',monospace", outline:"none", marginBottom:10, width:"100%", boxSizing:"border-box" }}
+        onFocus={e=>e.target.style.borderColor="var(--accent)"} onBlur={e=>e.target.style.borderColor="var(--border)"} />
+      <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:10 }}>
+        {[["all","All","#64748b"],...Object.entries(SEG).map(([k,s])=>[k,s.icon+" "+s.label,s.color])].map(([key,label,color])=>(
+          <button key={key} onClick={()=>setSegFilter(key)} style={{ padding:"3px 10px", borderRadius:20, fontSize:10, fontWeight:600, cursor:"pointer", border:`1px solid ${segFilter===key?color:"var(--border)"}`, background:segFilter===key?color+"22":"transparent", color:segFilter===key?color:"var(--muted)" }}>{label}</button>
+        ))}
+      </div>
+      <p style={{ fontSize:10, color:"var(--muted)", margin:"0 0 8px" }}>{filtered.length} users</p>
+      <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:400, overflowY:"auto", borderRadius:8, border:"1px solid var(--border)" }}>
+        {filtered.length === 0
+          ? <p style={{ padding:16, color:"var(--muted)", fontSize:11, textAlign:"center" }}>No users found</p>
+          : filtered.map((u,i) => {
+            const s = SEG[u.segment_key] || {}
+            return (
+              <div key={u.user_id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", background: i%2===0?"var(--surface)":"var(--card)", borderBottom: i<filtered.length-1?"1px solid var(--border)":"none" }}>
+                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:12, color:"var(--text)", fontWeight:500 }}>{u.user_id}</span>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <span style={{ fontSize:9, color:"var(--muted)" }}>{u.notifications?.length||0} notifs</span>
+                  <span style={{ fontSize:9, color:"var(--muted)" }}>{u.generated_at ? new Date(u.generated_at).toLocaleDateString() : ""}</span>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:s.color+"22", color:s.color, fontWeight:600 }}>{s.icon} {s.label}</span>
+                </div>
+              </div>
+            )
+          })
+        }
+      </div>
+    </div>
+  )
+}
+
 // ── DASHBOARD TAB ─────────────────────────────────────────────────────────────
 
 const Dashboard = ({ records, onRefresh, loading }) => {
-  const [globalSearch, setGlobalSearch] = useState("")
+  const [globalSearch,  setGlobalSearch]  = useState("")
   const [primaryFilter, setPrimaryFilter] = useState("all")
+  const [view,          setView]          = useState("kanban")
 
-  // flatten all notifications with timestamp for sorting + userMap
   const { allNotifs, userMap } = useMemo(() => {
-    const map = {}
-    const flat = []
+    const map = {}; const flat = []
     records.forEach(u => {
       map[String(u.user_id)] = u.segment_key
       const ts = u.generated_at ? new Date(u.generated_at).getTime() : 0
@@ -319,61 +363,44 @@ const Dashboard = ({ records, onRefresh, loading }) => {
     return { allNotifs: flat, userMap: map }
   }, [records])
 
-  const totalUsers  = records.length
-  const totalNotifs = allNotifs.length
-
   return (
     <div>
-      {/* dashboard header */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10 }}>
         <div>
-          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:11, fontWeight:700, letterSpacing:3, color:"var(--muted)", textTransform:"uppercase", margin:"0 0 4px" }}>Notification Logs</h2>
-          <p style={{ fontSize:11, color:"var(--muted)", margin:0, opacity:0.6 }}>{totalUsers} users · {totalNotifs} notifications across 5 buckets</p>
+          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:11, fontWeight:700, letterSpacing:3, color:"var(--muted)", textTransform:"uppercase", margin:"0 0 3px" }}>Notification Logs</h2>
+          <p style={{ fontSize:11, color:"var(--muted)", margin:0, opacity:0.6 }}>{records.length} users · {allNotifs.length} notifications across 5 buckets</p>
         </div>
-        <button onClick={onRefresh} disabled={loading} style={{ padding:"6px 14px", borderRadius:8, fontSize:11, background:"var(--surface)", border:"1px solid var(--border)", color:"var(--muted)", cursor:"pointer" }}>
-          {loading ? "..." : "↻ Refresh"}
-        </button>
+        <div style={{ display:"flex", gap:8 }}>
+          <div style={{ display:"flex", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:8, overflow:"hidden" }}>
+            {[["kanban","⬛ Kanban"],["list","☰ User List"]].map(([key,label])=>(
+              <button key={key} onClick={()=>setView(key)} style={{ padding:"6px 14px", fontSize:11, fontWeight:600, cursor:"pointer", border:"none", background:view===key?"var(--accent)":"transparent", color:view===key?"#0a0a0f":"var(--muted)", fontFamily:"'Syne',sans-serif" }}>{label}</button>
+            ))}
+          </div>
+          <button onClick={onRefresh} disabled={loading} style={{ padding:"6px 14px", borderRadius:8, fontSize:11, background:"var(--surface)", border:"1px solid var(--border)", color:"var(--muted)", cursor:"pointer" }}>{loading?"...":"↻ Refresh"}</button>
+        </div>
       </div>
 
-      {/* global search */}
-      <input
-        value={globalSearch}
-        onChange={e => setGlobalSearch(e.target.value)}
-        placeholder="Global search — highlights user across all 5 buckets..."
-        style={{ width:"100%", padding:"10px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, color:"var(--text)", fontSize:13, fontFamily:"'DM Mono',monospace", outline:"none", marginBottom:12, boxSizing:"border-box" }}
-        onFocus={e => e.target.style.borderColor = "var(--accent)"}
-        onBlur={e  => e.target.style.borderColor = "var(--border)"}
-      />
+      {view === "list" && <UserListPanel records={records} />}
 
-      {/* primary segment filter */}
-      <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:20 }}>
-        {[["all","All Users","#64748b"], ...SEG_KEYS.map(k => [k, SEG[k].label, SEG[k].color])].map(([key,label,color]) => (
-          <button key={key} onClick={() => setPrimaryFilter(key)} style={{
-            padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:600,
-            cursor:"pointer", transition:"all 0.15s",
-            border:`1px solid ${primaryFilter===key ? color : "var(--border)"}`,
-            background: primaryFilter===key ? color+"22" : "var(--surface)",
-            color: primaryFilter===key ? color : "var(--muted)",
-          }}>
-            {key !== "all" && SEG[key]?.icon + " "}{label}
-          </button>
-        ))}
-        <span style={{ fontSize:11, color:"var(--muted)", alignSelf:"center", marginLeft:4 }}>← filter by user's primary segment</span>
-      </div>
-
-      {/* 5 columns */}
-      <div style={{ display:"flex", gap:12, alignItems:"flex-start", overflowX:"auto", paddingBottom:8 }}>
-        {SEG_KEYS.map(k => (
-          <KanbanColumn
-            key={k}
-            segKey={k}
-            allNotifs={allNotifs}
-            userMap={userMap}
-            globalSearch={globalSearch}
-            primaryFilter={primaryFilter}
-          />
-        ))}
-      </div>
+      {view === "kanban" && <>
+        <input value={globalSearch} onChange={e=>setGlobalSearch(e.target.value)}
+          placeholder="Search user ID — filters all 5 columns simultaneously..."
+          style={{ width:"100%", padding:"10px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, color:"var(--text)", fontSize:13, fontFamily:"'DM Mono',monospace", outline:"none", marginBottom:12, boxSizing:"border-box", transition:"border 0.2s" }}
+          onFocus={e=>e.target.style.borderColor="var(--accent)"} onBlur={e=>e.target.style.borderColor="var(--border)"} />
+        <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:20 }}>
+          {[["all","All Users","#64748b"],...SEG_KEYS.map(k=>[k,SEG[k].label,SEG[k].color])].map(([key,label,color])=>(
+            <button key={key} onClick={()=>setPrimaryFilter(key)} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:600, cursor:"pointer", transition:"all 0.15s", border:`1px solid ${primaryFilter===key?color:"var(--border)"}`, background:primaryFilter===key?color+"22":"var(--surface)", color:primaryFilter===key?color:"var(--muted)" }}>
+              {key!=="all"&&SEG[key]?.icon+" "}{label}
+            </button>
+          ))}
+          <span style={{ fontSize:10, color:"var(--muted)", alignSelf:"center" }}>← primary segment</span>
+        </div>
+        <div style={{ display:"flex", gap:12, alignItems:"flex-start", overflowX:"auto", paddingBottom:8 }}>
+          {SEG_KEYS.map(k=>(
+            <KanbanColumn key={k} segKey={k} allNotifs={allNotifs} userMap={userMap} globalSearch={globalSearch} primaryFilter={primaryFilter} />
+          ))}
+        </div>
+      </>}
     </div>
   )
 }
