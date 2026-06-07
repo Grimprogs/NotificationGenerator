@@ -224,10 +224,12 @@ const KanbanColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilter 
   const [sort, setSort]           = useState("latest")
   const [modal, setModal]         = useState(null)
 
+  const normBucket = (v) => (v||"").toLowerCase().trim().replace(/[\s-]+/g,"_")
+
   const colNotifs = useMemo(() => {
-    let items = allNotifs.filter(n => n.source_bucket === segKey)
-    // global search highlights but doesn't hide
-    if (colSearch.trim()) items = items.filter(n => String(n.user_id).includes(colSearch.trim()))
+    let items = allNotifs.filter(n => normBucket(n.source_bucket) === segKey)
+    if (globalSearch.trim()) items = items.filter(n => String(n.user_id).includes(globalSearch.trim()))
+    if (colSearch.trim())    items = items.filter(n => String(n.user_id).includes(colSearch.trim()))
     if (primaryFilter !== "all") items = items.filter(n => userMap[String(n.user_id)] === primaryFilter)
     items = [...items].sort((a,b) => {
       if (sort === "latest")  return (b._ts||0) - (a._ts||0)
