@@ -136,9 +136,9 @@ const MetaTable = ({ profile }) => {
   )
 }
 
-// ── KANBAN CARD (dashboard) ───────────────────────────────────────────────────
+// ── Segments CARD (dashboard) ───────────────────────────────────────────────────
 
-const KanbanCard = ({ notif, userSegKey, globalSearch, onClick }) => {
+const SegmentsCard = ({ notif, userSegKey, globalSearch, onClick }) => {
   const sbKey  = notif.source_bucket || ""
   const colSeg = SEG[sbKey] || {}
   const colColor = colSeg.color || "#6ee7b7"
@@ -216,9 +216,9 @@ const Modal = ({ user, notif, onClose }) => {
   )
 }
 
-// ── KANBAN COLUMN ─────────────────────────────────────────────────────────────
+// ── Segments COLUMN ─────────────────────────────────────────────────────────────
 
-const KanbanColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilter }) => {
+const SegmentsColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilter }) => {
   const s = SEG[segKey]
   const [colSearch, setColSearch] = useState("")
   const [sort, setSort]           = useState("latest")
@@ -285,7 +285,7 @@ const KanbanColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilter 
         {colNotifs.length === 0
           ? <p style={{ color:"var(--muted)", fontSize:11, textAlign:"center", padding:24 }}>No notifications</p>
           : colNotifs.map((n,i) => (
-            <KanbanCard
+            <SegmentsCard
               key={`${n.user_id}-${n.notification_number}`}
               notif={n}
               userSegKey={userMap[String(n.user_id)] || ""}
@@ -351,7 +351,7 @@ const UserListPanel = ({ records }) => {
 const Dashboard = ({ records, onRefresh, loading }) => {
   const [globalSearch,  setGlobalSearch]  = useState("")
   const [primaryFilter, setPrimaryFilter] = useState("all")
-  const [view,          setView]          = useState("kanban")
+  const [view,          setView]          = useState("Segments")
 
   const { allNotifs, userMap } = useMemo(() => {
     const map = {}; const flat = []
@@ -372,7 +372,7 @@ const Dashboard = ({ records, onRefresh, loading }) => {
         </div>
         <div style={{ display:"flex", gap:8 }}>
           <div style={{ display:"flex", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:8, overflow:"hidden" }}>
-            {[["kanban","⬛ Kanban"],["list","☰ User List"]].map(([key,label])=>(
+            {[["Segments","⬛ Segments"],["list","☰ User List"]].map(([key,label])=>(
               <button key={key} onClick={()=>setView(key)} style={{ padding:"6px 14px", fontSize:11, fontWeight:600, cursor:"pointer", border:"none", background:view===key?"var(--accent)":"transparent", color:view===key?"#0a0a0f":"var(--muted)", fontFamily:"'Syne',sans-serif" }}>{label}</button>
             ))}
           </div>
@@ -382,7 +382,7 @@ const Dashboard = ({ records, onRefresh, loading }) => {
 
       {view === "list" && <UserListPanel records={records} />}
 
-      {view === "kanban" && <>
+      {view === "Segments" && <>
         <input value={globalSearch} onChange={e=>setGlobalSearch(e.target.value)}
           placeholder="Search user ID — filters all 5 columns simultaneously..."
           style={{ width:"100%", padding:"10px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, color:"var(--text)", fontSize:13, fontFamily:"'DM Mono',monospace", outline:"none", marginBottom:12, boxSizing:"border-box", transition:"border 0.2s" }}
@@ -397,7 +397,7 @@ const Dashboard = ({ records, onRefresh, loading }) => {
         </div>
         <div style={{ display:"flex", gap:12, alignItems:"flex-start", overflowX:"auto", paddingBottom:8 }}>
           {SEG_KEYS.map(k=>(
-            <KanbanColumn key={k} segKey={k} allNotifs={allNotifs} userMap={userMap} globalSearch={globalSearch} primaryFilter={primaryFilter} />
+            <SegmentsColumn key={k} segKey={k} allNotifs={allNotifs} userMap={userMap} globalSearch={globalSearch} primaryFilter={primaryFilter} />
           ))}
         </div>
       </>}
