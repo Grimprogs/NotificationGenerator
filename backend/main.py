@@ -8,6 +8,7 @@ HPNS Backend v5
 import os, json, asyncio
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import quote
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -23,7 +24,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/"
-    "models/gemini-2.5-flash:generateContent"
+    "models/gemini-2.5-pro:generateContent"
 )
 
 TABLE_USERS         = "users"
@@ -133,7 +134,7 @@ def fetch_user(uid: str) -> dict:
 
 def fetch_schemes() -> list:
     sb  = get_sb()
-    res = sb.table(TABLE_SCHEMES).select("id, name").eq("is_active", True).execute()
+    res = sb.table(TABLE_SCHEMES).select("id, name, slug").eq("is_active", True).execute()
     return res.data or []
 
 
@@ -162,6 +163,9 @@ def save_to_supabase(user_id: str, segment_key: str, notifications: list):
         "relevance_rationale":    n.get("relevance_rationale",""),
     } for n in notifications]
     sb.table(TABLE_NOTIFICATIONS).insert(rows).execute()
+    # Explicitly select back the inserted rows to guarantee we get the IDs
+    res = sb.table(TABLE_NOTIFICATIONS).select("id, notification_number").eq("user_id", uid_int).order("id", desc=True).limit(len(notifications)).execute()
+    return res.data or []
 
 # ── PROMPT ────────────────────────────────────────────────────────────────────
 
@@ -255,7 +259,7 @@ OUTPUT — raw JSON only. No markdown. No preamble.
   "source_bucket"         : "content_reader | high_converter | job_hunter | scheme_seeker | service_explorer",
   "dependency_vector_used": "Dependent Aspirational | Shared Household Distress | High Density Dilution | Independent Pro",
   "attention_strategy"    : "Fatigue Breakthrough | Swift Action Drive | Educational Hook",
-  "relevance_rationale"   : "one sentence: why this bucket + scheme for this user right now"
+  "relevance_rationale"   : "2-3 crisp bullet points explaining EXACTLY why this scheme and message fit this specific user. Start each bullet point with a '-'"
 }}"""
 
 # ── GEMINI ────────────────────────────────────────────────────────────────────
@@ -265,7 +269,7 @@ async def call_gemini(client: httpx.AsyncClient, prompt: str, n: int) -> dict:
         GEMINI_URL,
         headers={"x-goog-api-key": GEMINI_KEY},
         json={"contents": [{"parts": [{"text": prompt}]}]},
-        timeout=60,
+        timeout=120,
     )
     r.raise_for_status()
     raw   = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -302,14 +306,28 @@ async def get_notifications(user_id: str):
             for n in range(1, 6)
         ]))
 
-    try:    save_to_supabase(user_id, segment["segment_key"], notifications)
+    def get_scheme_url(scheme_name):
+        initials = "".join(w[0] for w in scheme_name.split() if w.strip()).lower()
+        return f"https://www.myscheme.gov.in/schemes/{initials}"
+
+    for n in notifications:
+        n["scheme_url"] = get_scheme_url(n.get("scheme_name", ""))
+
+    try:
+        inserted = save_to_supabase(user_id, segment["segment_key"], notifications)
+        # Patch Supabase-assigned IDs back into notification dicts
+        for notif in notifications:
+            for row in inserted:
+                if str(row.get("notification_number")) == str(notif.get("notification_number")):
+                    notif["id"] = row.get("id")
+                    break
     except Exception as e: print(f"[WARN] Supabase save failed: {e}")
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     (OUTPUT_DIR / f"output_{user_id}_{ts}.json").write_text(
         json.dumps({"timestamp":ts,"user_id":user_id,"profile":profile,"notifications":notifications},
-                   indent=2, ensure_ascii=False))
+                   indent=2, ensure_ascii=False), encoding="utf-8")
 
     return {
         "user_id":       user_id,
@@ -364,10 +382,85 @@ def dashboard():
             "body":                  row.get("body",""),
             "scheme_id":             row.get("scheme_id",""),
             "scheme_name":           row.get("scheme_name",""),
+            "scheme_url":            row.get("scheme_url",""),
             "source_bucket":         row.get("source_bucket",""),
             "dependency_vector_used":row.get("dependency_vector_used",""),
             "attention_strategy":    row.get("attention_strategy",""),
             "language":              row.get("language",""),
             "relevance_rationale":   row.get("relevance_rationale",""),
+            "user_id":               row.get("user_id",""),
+            "id":                    row.get("id"),
+            "campaign_image":        row.get("campaign_image"),
         })
     return list(grouped.values())
+
+
+# ── IMAGE GENERATION ──────────────────────────────────────────────────────────
+
+IMAGEN_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/"
+    "models/imagen-3.0-generate-002:predict"
+)
+
+@app.post("/generate-image")
+async def generate_image(payload: dict):
+    """Generate a personalized promotional image for a government scheme."""
+    scheme_name   = payload.get("scheme_name", "")
+    title         = payload.get("title", "")
+    body          = payload.get("body", "")
+    rationale     = payload.get("relevance_rationale", "")
+    age           = payload.get("age", "")
+    occupation    = payload.get("occupation", "")
+    segment       = payload.get("segment", "")
+    language      = payload.get("language", "English")
+
+    # Map segment to visual theme
+    theme_map = {
+        "job_hunter":       "employment success, job interview, workplace, career certificate",
+        "scheme_seeker":    "government scheme benefits, financial security, community support",
+        "content_reader":   "education, reading, knowledge, digital access",
+        "high_converter":   "business growth, entrepreneurship, small business owner",
+        "service_explorer": "skill development, training center, certification, learning",
+    }
+    visual_theme = theme_map.get(segment, "positive life improvement, family wellbeing, financial security")
+
+    prompt = f"""High-quality digital promotional poster for Axis My India government scheme campaign.
+
+Scene: {visual_theme}. Show a realistic Indian person aged around {age or '30'}, {occupation or 'working professional'}, experiencing a positive life outcome after benefiting from a government scheme.
+
+Scheme: {scheme_name}
+Message: {title} — {body}
+
+Design requirements:
+- Realistic Indian people, warm and aspirational scene
+- Professional advertising quality, modern clean layout
+- Warm trustworthy colors, government-campaign style
+- Show confidence, hope, achievement and family wellbeing
+- Leave clean space at bottom for text overlay
+- Include subtle "Axis My India" branding element in corner
+- No political imagery, no government leader photos
+- No excessive text in image
+- High resolution digital poster style, 16:9 or portrait format
+
+Focus on the positive future: what life looks like AFTER benefiting from this scheme."""
+
+    async with httpx.AsyncClient() as client:
+        try:
+            r = await client.post(
+                IMAGEN_URL,
+                headers={"x-goog-api-key": GEMINI_KEY},
+                json={
+                    "instances": [{"prompt": prompt}],
+                    "parameters": {"sampleCount": 1, "aspectRatio": "9:16"}
+                },
+                timeout=60,
+            )
+            r.raise_for_status()
+            data = r.json()
+            predictions = data.get("predictions", [])
+            if predictions and "bytesBase64Encoded" in predictions[0]:
+                return {"image_b64": predictions[0]["bytesBase64Encoded"]}
+            return {"error": "No image returned", "raw": data}
+        except Exception as e:
+            raise HTTPException(500, f"Image generation failed: {e}")
+
