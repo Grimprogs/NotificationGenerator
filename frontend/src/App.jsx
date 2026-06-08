@@ -98,7 +98,7 @@ async function saveImageToSupabase(notifId, imgB64) {
 const SEG = {
   content_reader:   { label:"Content Reader",   color:"#3b82f6", icon:"📄", pct:"45.8%", resp:"12.1%", traits:["High article clicks & views","Long engagement time"] },
   high_converter:   { label:"High Converter",   color:"#16a34a", icon:"🚀", pct:"18.0%", resp:"34.2%", traits:["Contact clicks & enquiries","Completed submissions"], best:true },
-  job_hunter:       { label:"Job Hunter",       color:"#d97706", icon:"💼", pct:"16.3%", resp:"15.7%", traits:["Job card & option clicks","Job-focused browsing"] },
+  job_hunter:       { label:"Jobs & Livelihood",  color:"#d97706", icon:"💼", pct:"16.3%", resp:"15.7%", traits:["Job card & option clicks","Job-focused browsing"] },
   scheme_seeker:    { label:"Scheme Seeker",    color:"#7c3aed", icon:"🏛️", pct:"10.9%", resp:"9.8%",  traits:["Scheme & category clicks","Profile completion intent"] },
   service_explorer: { label:"Service Explorer", color:"#b45309", icon:"🔧", pct:"8.9%",  resp:"14.3%", traits:["Service & sub-service clicks","Deep service navigation"] },
 }
