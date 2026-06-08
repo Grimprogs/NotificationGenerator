@@ -394,6 +394,15 @@ def dashboard():
         })
     return list(grouped.values())
 
+@app.delete("/notification/{id}")
+def delete_notification(id: int):
+    try:
+        sb = get_sb()
+        res = sb.table(TABLE_NOTIFICATIONS).delete().eq("id", id).execute()
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 
 # ── IMAGE GENERATION ──────────────────────────────────────────────────────────
 

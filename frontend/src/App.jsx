@@ -698,14 +698,30 @@ const SchemeDetails = () => {
     }
     window.open(url, "_blank")
   }
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this notification?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/notification/${notification.id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete from database")
+      
+      // Clear dashboard cache to force a reload of fresh data without the deleted item
+      sessionStorage.removeItem("dashboardCache")
+      navigate("/?tab=dashboard")
+    } catch(e) {
+      alert("Error deleting notification: " + e.message)
+    }
+  }
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px" }}>
-      <button onClick={() => navigate(-1)} style={{ background:"transparent", border:"none", color:"var(--muted)", cursor:"pointer", marginBottom: 24, fontSize: 13, display:"flex", alignItems:"center", gap: 6, padding:0, fontFamily:"'Inter',sans-serif" }}>
-        <span>←</span> Back to Dashboard
-      </button>
-
-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: `4px solid ${color}`, borderRadius: 12, padding: "32px", boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <button onClick={() => navigate(-1)} style={{ background:"transparent", border:"none", color:"var(--muted)", cursor:"pointer", fontSize: 13, display:"flex", alignItems:"center", gap: 6, padding:0, fontFamily:"'Inter',sans-serif" }}>
+          <span>←</span> Back to Dashboard
+        </button>
+        <button onClick={handleDelete} style={{ background:"transparent", border:"1px solid var(--warn)", color:"var(--warn)", borderRadius: 6, cursor:"pointer", fontSize: 12, display:"flex", alignItems:"center", gap: 6, padding:"6px 12px", fontWeight:500, fontFamily:"'Inter',sans-serif" }}>
+          🗑️ Delete Notification
+        </button>
+      </div>
         
         <div style={{ marginBottom: 24 }}>
           <p style={{ fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, margin: "0 0 6px", fontFamily:"'Inter',sans-serif" }}>Recommended Scheme</p>
