@@ -806,9 +806,11 @@ const GenerateTab = ({ onNewData }) => {
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
 
 const Home = () => {
-  const [tab,       setTab]       = useState("generate")
+  const [tab,       setTab]       = useState(() => sessionStorage.getItem("homeTab") || "generate")
   const [dashboard, setDashboard] = useState([])
   const [dbLoading, setDbLoading] = useState(false)
+  
+  useEffect(() => { sessionStorage.setItem("homeTab", tab) }, [tab])
   
   // Theme toggle state
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark")
