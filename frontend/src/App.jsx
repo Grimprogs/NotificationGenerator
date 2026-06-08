@@ -809,8 +809,16 @@ const Home = () => {
   const [tab,       setTab]       = useState("generate")
   const [dashboard, setDashboard] = useState([])
   const [dbLoading, setDbLoading] = useState(false)
+  
+  // Theme toggle state
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark")
 
   useEffect(() => { loadDashboard() }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme)
+    localStorage.setItem("theme", theme)
+  }, [theme])
 
   async function loadDashboard() {
     setDbLoading(true)
@@ -825,11 +833,23 @@ const Home = () => {
     <div style={{ maxWidth:1200, margin:"0 auto", padding:"36px 24px" }}>
 
       {/* HEADER */}
-      <div style={{ marginBottom:36, paddingBottom:24, borderBottom:"1px solid var(--border)" }}>
-        <p style={{ fontSize:11, letterSpacing:2, color:"var(--accent)", margin:"0 0 8px", opacity:0.85 }}>NOTIFICATION ENGINE</p>
-        <h1 style={{ fontFamily:"'Inter',sans-serif", fontSize:"clamp(22px,3vw,34px)", fontWeight:600, color:"var(--text)", lineHeight:1.2, margin:0 }}>
-          Personalized Government Alerts
-        </h1>
+      <div style={{ marginBottom:36, paddingBottom:24, borderBottom:"1px solid var(--border)", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+        <div>
+          <p style={{ fontSize:11, letterSpacing:2, color:"var(--accent)", margin:"0 0 8px", opacity:0.85 }}>NOTIFICATION ENGINE</p>
+          <h1 style={{ fontFamily:"'Inter',sans-serif", fontSize:"clamp(22px,3vw,34px)", fontWeight:600, color:"var(--text)", lineHeight:1.2, margin:0 }}>
+            Personalized Government Alerts
+          </h1>
+        </div>
+        <button 
+          onClick={() => setTheme(t => t === "light" ? "dark" : "light")}
+          style={{
+            padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border)",
+            background: "var(--surface)", color: "var(--text)", cursor: "pointer",
+            fontWeight: 500, fontSize: 13, display:"flex", alignItems:"center", gap: 6
+          }}
+        >
+          {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+        </button>
       </div>
 
       {/* TABS */}
