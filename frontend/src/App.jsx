@@ -807,7 +807,10 @@ const GenerateTab = ({ onNewData }) => {
 
 const Home = () => {
   const [tab,       setTab]       = useState(() => sessionStorage.getItem("homeTab") || "generate")
-  const [dashboard, setDashboard] = useState([])
+  const [dashboard, setDashboard] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("dashboardCache")) || [] } 
+    catch(e) { return [] }
+  })
   const [dbLoading, setDbLoading] = useState(false)
   
   useEffect(() => { sessionStorage.setItem("homeTab", tab) }, [tab])
@@ -823,10 +826,14 @@ const Home = () => {
   }, [theme])
 
   async function loadDashboard() {
-    setDbLoading(true)
+    if (dashboard.length === 0) setDbLoading(true)
     try {
       const res = await fetch(`${API_BASE}/dashboard`)
-      if (res.ok) setDashboard(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        setDashboard(data)
+        sessionStorage.setItem("dashboardCache", JSON.stringify(data))
+      }
     } catch(e) { console.warn("Dashboard failed:", e) }
     finally { setDbLoading(false) }
   }
