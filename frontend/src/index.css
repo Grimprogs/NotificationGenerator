@@ -33,3 +33,29 @@ body {
   min-height: 100vh;
   transition: background 0.2s, color 0.2s;
 }
+
+@media (max-width: 650px) {
+  .responsive-tabs {
+    flex-wrap: wrap !important;
+  }
+  .responsive-tabs > button {
+    flex-basis: 50% !important;
+    border-right: 1px solid var(--border) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .responsive-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+  .responsive-search-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .responsive-search-row > * {
+    width: 100% !important;
+  }
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

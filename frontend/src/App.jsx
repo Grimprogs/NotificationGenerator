@@ -519,7 +519,7 @@ const SegmentsColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilte
       {/* Full-width card grid */}
       <div style={{
         display:"grid",
-        gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))",
+        gridTemplateColumns:"repeat(auto-fill, minmax(250px, 1fr))",
         gap:14,
         minHeight:200,
       }}>
@@ -612,7 +612,7 @@ const Dashboard = ({ records, onRefresh, loading }) => {
 
   return (
     <div>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
+      <div className="responsive-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
         <div>
           <h2 style={{ fontFamily:"'Inter',sans-serif", fontSize:14, fontWeight:600, letterSpacing:0.8, color:"var(--text)", textTransform:"uppercase", margin:"0 0 3px" }}>Notification Logs</h2>
           <p style={{ fontSize:11, color:"var(--muted)", margin:0 }}>{records.length} users · {allNotifs.length} notifications across 5 buckets</p>
@@ -637,7 +637,7 @@ const Dashboard = ({ records, onRefresh, loading }) => {
           onFocus={e=>e.target.style.borderColor="var(--accent)"} onBlur={e=>e.target.style.borderColor="var(--border)"} />
 
         {/* Bucket tabs */}
-        <div style={{ display:"flex", gap:0, marginBottom:20, background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, overflow:"hidden" }}>
+        <div className="responsive-tabs" style={{ display:"flex", gap:0, marginBottom:20, background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, overflow:"hidden" }}>
           {SEG_KEYS.map((k, idx) => {
             const s = SEG[k]
             const active = activeBucket === k
@@ -780,7 +780,7 @@ const GenerateTab = ({ onNewData }) => {
 
   return (
     <div>
-      <div style={{ display:"flex", gap:10, marginBottom:28 }}>
+      <div className="responsive-search-row" style={{ display:"flex", gap:10, marginBottom:28 }}>
         <input
           value={userId}
           onChange={e => setUserId(e.target.value)}
