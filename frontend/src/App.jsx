@@ -447,7 +447,7 @@ const SegmentsCard = ({ notif, userSegKey, globalSearch }) => {
           <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:"var(--muted)" }}>{notif.user_id}</span>
           {uSeg.label && (
             <span style={{ fontSize:10, padding:"2px 6px", borderRadius:4, background:uSeg.color+"15", border:`1px solid ${uSeg.color}28`, color:uSeg.color, fontWeight:500 }}>
-              {uSeg.icon} {uSeg.label}
+              {uSeg.icon} User: {uSeg.label}
             </span>
           )}
         </div>
