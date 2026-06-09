@@ -722,6 +722,8 @@ const SchemeDetails = () => {
           🗑️ Delete Notification
         </button>
       </div>
+      
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: `4px solid ${color}`, borderRadius: 12, padding: "32px", boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
         
         <div style={{ marginBottom: 24 }}>
           <p style={{ fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, margin: "0 0 6px", fontFamily:"'Inter',sans-serif" }}>Recommended Scheme</p>
