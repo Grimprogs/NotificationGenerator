@@ -444,7 +444,7 @@ const SegmentsCard = ({ notif, userSegKey, globalSearch }) => {
         onMouseLeave={e => e.currentTarget.style.opacity = "1"}
       >
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
-          <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:"var(--muted)" }}>{notif.user_id}</span>
+          <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:"var(--muted)" }}>{notif.user_name || "User"} ({notif.user_id})</span>
           {uSeg.label && (
             <span style={{ fontSize:10, padding:"2px 6px", borderRadius:4, background:uSeg.color+"15", border:`1px solid ${uSeg.color}28`, color:uSeg.color, fontWeight:500 }}>
               {uSeg.icon} User: {uSeg.label}
@@ -477,9 +477,18 @@ const SegmentsColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilte
   const normBucket = (v) => (v||"").toLowerCase().trim().replace(/[\s-]+/g,"_")
 
   const colNotifs = useMemo(() => {
-    let items = allNotifs.filter(n => normBucket(n.source_bucket) === segKey)
-    if (globalSearch.trim()) items = items.filter(n => String(n.user_id).includes(globalSearch.trim()))
-    if (colSearch.trim())    items = items.filter(n => String(n.user_id).includes(colSearch.trim()))
+    let items = allNotifs.filter(n => {
+      const b = normBucket(n.source_bucket)
+      if (b !== segKey) return false
+      
+      const q1 = colSearch.trim().toLowerCase()
+      const matchCol = !q1 || String(n.user_id).includes(q1) || (n.user_name || "").toLowerCase().includes(q1)
+      
+      const q2 = globalSearch.trim().toLowerCase()
+      const matchGlobal = !q2 || String(n.user_id).includes(q2) || (n.user_name || "").toLowerCase().includes(q2)
+      
+      return matchCol && matchGlobal
+    })
     if (primaryFilter !== "all") items = items.filter(n => userMap[String(n.user_id)] === primaryFilter)
     items = [...items].sort((a,b) => {
       if (sort === "latest")  return (b._ts||0) - (a._ts||0)
@@ -500,7 +509,7 @@ const SegmentsColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilte
         <input
           value={colSearch}
           onChange={e => setColSearch(e.target.value)}
-          placeholder="Search user ID..."
+          placeholder="Search name or ID..."
           style={{ flex:1, minWidth:200, padding:"8px 12px", background:"var(--card)", border:"1px solid var(--border)", borderRadius:7, color:"var(--text)", fontSize:12, fontFamily:"'DM Mono',monospace", outline:"none", boxSizing:"border-box" }}
           onFocus={e => e.target.style.borderColor = s.color+"80"}
           onBlur={e  => e.target.style.borderColor = "var(--border)"}
@@ -541,19 +550,20 @@ const SegmentsColumn = ({ segKey, allNotifs, userMap, globalSearch, primaryFilte
 
 // ── USER LIST PANEL ──────────────────────────────────────────────────────────────
 
-const UserListPanel = ({ records }) => {
-  const [segFilter, setSegFilter] = useState("all")
+const UserListPanel = ({ records, onViewUser }) => {
   const [search,    setSearch]    = useState("")
+  const [segFilter, setSegFilter] = useState("all")
 
   const filtered = useMemo(() => records.filter(u => {
     const matchSeg = segFilter === "all" || u.segment_key === segFilter
-    const matchQ   = !search.trim() || String(u.user_id).includes(search.trim())
+    const q = search.trim().toLowerCase()
+    const matchQ   = !q || String(u.user_id).includes(q) || (u.name || "").toLowerCase().includes(q)
     return matchSeg && matchQ
   }), [records, segFilter, search])
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search user ID..."
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or ID..."
         style={{ padding:"8px 14px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:8, color:"var(--text)", fontSize:12, fontFamily:"'DM Mono',monospace", outline:"none", marginBottom:8, width:"100%", boxSizing:"border-box" }}
         onFocus={e=>e.target.style.borderColor="var(--accent)"} onBlur={e=>e.target.style.borderColor="var(--border)"} />
       <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:10 }}>
@@ -568,8 +578,8 @@ const UserListPanel = ({ records }) => {
           : filtered.map((u,i) => {
             const s = SEG[u.segment_key] || {}
             return (
-              <div key={u.user_id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 14px", background: i%2===0?"var(--surface)":"var(--card)", borderBottom: i<filtered.length-1?"1px solid var(--border)":"none" }}>
-                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:12, color:"var(--text)" }}>{u.user_id}</span>
+              <div key={u.user_id} onClick={() => onViewUser(u.user_id)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 14px", background: i%2===0?"var(--surface)":"var(--card)", borderBottom: i<filtered.length-1?"1px solid var(--border)":"none", cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.background="var(--border)"} onMouseLeave={e=>e.currentTarget.style.background=i%2===0?"var(--surface)":"var(--card)"}>
+                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:12, color:"var(--text)" }}>{u.name || "User"} ({u.user_id})</span>
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   <span style={{ fontSize:11, color:"var(--muted)" }}>{u.notifications?.length||0} notifs</span>
                   <span style={{ fontSize:11, color:"var(--muted)" }}>{u.generated_at ? new Date(u.generated_at).toLocaleDateString() : ""}</span>
@@ -591,14 +601,15 @@ const Dashboard = ({ records, onRefresh, loading }) => {
   const [activeBucket,  setActiveBucket]  = useState(SEG_KEYS[0])
   const [view,          setView]          = useState("Segments")
 
-  const { allNotifs, userMap } = useMemo(() => {
-    const map = {}; const flat = []
+  const { allNotifs, userMap, userNameMap } = useMemo(() => {
+    const map = {}; const nameMap = {}; const flat = []
     records.forEach(u => {
       map[String(u.user_id)] = u.segment_key
+      nameMap[String(u.user_id)] = u.name || "User"
       const ts = u.generated_at ? new Date(u.generated_at).getTime() : 0
-      u.notifications.forEach(n => flat.push({ ...n, user_id: u.user_id, _ts: ts }))
+      u.notifications.forEach(n => flat.push({ ...n, user_id: u.user_id, user_name: u.name, _ts: ts }))
     })
-    return { allNotifs: flat, userMap: map }
+    return { allNotifs: flat, userMap: map, userNameMap: nameMap }
   }, [records])
 
   // Count per bucket for badges
@@ -627,12 +638,12 @@ const Dashboard = ({ records, onRefresh, loading }) => {
         </div>
       </div>
 
-      {view === "list" && <UserListPanel records={records} />}
+      {view === "list" && <UserListPanel records={records} onViewUser={uid => { setView("Segments"); setGlobalSearch(String(uid)) }} />}
 
       {view === "Segments" && <>
         {/* Global search */}
         <input value={globalSearch} onChange={e=>setGlobalSearch(e.target.value)}
-          placeholder="Search user ID..."
+          placeholder="Search name or ID..."
           style={{ width:"100%", padding:"9px 14px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:8, color:"var(--text)", fontSize:12, fontFamily:"'DM Mono',monospace", outline:"none", marginBottom:16, boxSizing:"border-box", transition:"border 0.15s" }}
           onFocus={e=>e.target.style.borderColor="var(--accent)"} onBlur={e=>e.target.style.borderColor="var(--border)"} />
 
@@ -800,7 +811,7 @@ const GenerateTab = ({ onNewData }) => {
 
       {data && !loading && (
         <div style={{ display:"flex", flexDirection:"column", gap:22 }}>
-          <p style={{ fontSize:11, color:"var(--muted)", margin:0 }}>User {data.user_id} · {new Date(data.generated_at).toLocaleString()}</p>
+          <p style={{ fontSize:11, color:"var(--muted)", margin:0 }}>{data.user_profile?.name || "User"} ({data.user_id}) · {new Date(data.generated_at).toLocaleString()}</p>
           {data.user_segment && <div>
             <p style={{ fontSize:11, letterSpacing:1, color:"var(--muted)", textTransform:"uppercase", margin:"0 0 10px" }}>User Segment</p>
             <SegmentCard segment={data.user_segment} />

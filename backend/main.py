@@ -363,6 +363,14 @@ def dashboard():
         sb  = get_sb()
         res = sb.table(TABLE_NOTIFICATIONS).select("*").order("generated_at", desc=True).execute()
         rows = res.data or []
+        
+        # Fetch user names for these notifications
+        u_ids = list(set(r["user_id"] for r in rows if r.get("user_id")))
+        user_names = {}
+        if u_ids:
+            users_res = sb.table(TABLE_USERS).select("user_id, name").in_("user_id", u_ids).execute()
+            user_names = {str(u["user_id"]): u.get("name", "Unknown") for u in users_res.data}
+            
     except Exception as e:
         raise HTTPException(500, str(e))
 
@@ -372,6 +380,7 @@ def dashboard():
         if uid not in grouped:
             grouped[uid] = {
                 "user_id":       uid,
+                "name":          user_names.get(uid, "Unknown"),
                 "segment_key":   row.get("segment_key",""),
                 "generated_at":  row.get("generated_at",""),
                 "notifications": [],
