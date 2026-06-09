@@ -60,6 +60,30 @@ LANG_MAP = {
     "te":"Telugu","ta":"Tamil","as":"Assamese","ml":"Malayalam",
     "bn":"Bengali","kn":"Kannada","gu":"Gujarati","or":"Odia",
 }
+OCCUPATION_MAP = {
+    "2": "Unskilled worker", "3": "Skilled Workers", "4": "Agricultural Worker", "5": "Petty traders",
+    "6": "Shop owner - Auto / Car / Truck / Tractor parts", "7": "Businessmen with No employees",
+    "8": "Businessmen with 1-9 employees", "9": "Businessmen with 10+ employees", "10": "Self-employed",
+    "11": "Clerical / Salesman", "12": "Supervisory Level", "13": "Officers/Executives-Junior",
+    "14": "Officers/Executives-Mid/Senior", "15": "Owner of livestock/fisheries/dairy", "16": "Farmer",
+    "17": "Teacher", "18": "Doctor", "19": "Service in a Private Company", "20": "Other Occupation",
+    "21": "Not Applicable", "22": "Unorganized Worker", "23": "Student", "24": "Artisans, Spinners & Weavers",
+    "25": "Sportsperson", "26": "Journalist", "27": "Safai Karamchari", "28": "Khadi Artisan",
+    "29": "Homemaker", "30": "Blacksmith", "31": "Career Counsellor", "32": "Carpenter",
+    "33": "Chartered Accountant", "34": "Chef / Cook", "35": "Chemists / Pharmacist", "36": "Company Labour",
+    "37": "Conductor", "38": "Courier Delivery Worker", "39": "Customer Service Representative", "40": "Dairy Farmer",
+    "41": "Dancer", "42": "Data Analyst / Data Scientist", "43": "Data Entry Operator",
+    "44": "Defence / Security Personnel", "45": "Delivery Boy", "46": "Electrician", "47": "Engineer",
+    "48": "Fisherman", "49": "Flour Mill Worker", "50": "Gardener", "51": "Goldsmith",
+    "52": "Government Employee", "53": "Grocery Shop Owner", "54": "Handcraft / Weaver / Julaha",
+    "55": "Hawker / Vendor", "56": "Honey Harvester", "57": "Hotel / Contractor/ Real Estate",
+    "58": "Lawyer / Judge", "59": "Leatherworker / Mochi", "60": "Mechanic", "61": "Mine worker",
+    "62": "Petrol Pump Attendant", "63": "Pilot", "64": "Plumber", "65": "Potter / Kumhar",
+    "66": "Private Car Driver", "67": "Research Specialist", "68": "Security Guard",
+    "69": "Social Media Influencer", "70": "Tailor", "71": "Welder", "72": "Air Hostess",
+    "73": "Anchor", "74": "Anganwadi Worker", "75": "ASHA Worker", "76": "Athlete",
+    "77": "Auto / Taxi / Truck / Hand Rickshaw Driver", "78": "Bakery Worker", "79": "Barber", "80": "Beautician"
+}
 
 SEGMENTS = {
     "Content Reader":   {"segment_key":"content_reader",  "label":"Content Reader",  "color":"#3b82f6","is_best":False,"segment_pct":"45.8%","notification_responsive":"12.1%","traits":["High article clicks & views","Long engagement time"]},
@@ -108,6 +132,7 @@ def resolve(u: dict) -> dict:
     p["personal_income"] = PERSONAL_INCOME_MAP.get(p.get("personal_income_id",""), "Unknown")
     p["family_income"]   = FAMILY_INCOME_MAP.get(p.get("family_income_id",""), "Unknown")
     p["earner_role"]     = FAMILY_TYPE_MAP.get(p.get("family_type_id",""), "Unknown")
+    p["occupation"]      = OCCUPATION_MAP.get(p.get("occupation_id",""), "Unknown")
     p["bpl"]             = BPL_MAP.get(p.get("bpl_category","").upper(), "Not Available")
     p["language"]        = LANG_MAP.get(p.get("preferred_language","en"), "English")
     p["language_code"]   = p.get("preferred_language","en").strip()
@@ -198,7 +223,7 @@ Personal Income: {u.get("personal_income","")} | Family Income: {u.get("family_i
 BPL: {u.get("bpl","")} | Earner Role: {u.get("earner_role","")}
 
 [SOCIOPROFESSIONAL]
-Occupation ID: {u.get("occupation_id","")} | Working Status: {u.get("working_status_id","")}
+Occupation: {u.get("occupation","Unknown")} | Working Status: {u.get("working_status_id","")}
 
 [APP TELEMETRY]
 Primary Segment: {u.get("primary_category","")} | Tag: {u.get("notification_tag","")}
