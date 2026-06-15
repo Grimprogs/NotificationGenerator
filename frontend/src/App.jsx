@@ -615,11 +615,18 @@ const Dashboard = ({ records, onRefresh, loading }) => {
   // Count per bucket for badges
   const bucketCounts = useMemo(() => {
     const counts = {}
+    const q = globalSearch.trim().toLowerCase()
+    
+    const filteredNotifs = allNotifs.filter(n => {
+      if (!q) return true
+      return String(n.user_id).includes(q) || (n.user_name || "").toLowerCase().includes(q)
+    })
+
     SEG_KEYS.forEach(k => {
-      counts[k] = allNotifs.filter(n => (n.source_bucket||"").toLowerCase().trim().replace(/[\s-]+/g,"_") === k).length
+      counts[k] = filteredNotifs.filter(n => (n.source_bucket||"").toLowerCase().trim().replace(/[\s-]+/g,"_") === k).length
     })
     return counts
-  }, [allNotifs])
+  }, [allNotifs, globalSearch])
 
   return (
     <div>
