@@ -1,0 +1,26 @@
+# Exclude Python virtual environments
+zeex_hpns/
+venv/
+env/
+.venv/
+
+# Exclude package manager folders
+node_modules/
+
+# Exclude builds and output folders
+dist/
+build/
+outputs/
+outputs_v2/
+outputs_v3/
+outputs_v4/
+outputs_v5/
+outputs_new/
+
+# Exclude backups and temporary files
+files/
+frontend_backup/
+main_backup.py
+*.zip
+.git/
+.planning/

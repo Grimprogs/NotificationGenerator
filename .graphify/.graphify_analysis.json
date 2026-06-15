@@ -1,0 +1,250 @@
+{
+  "communities": {
+    "0": [
+      "main",
+      "main_avg",
+      "main_build_prompt",
+      "main_call_gemini",
+      "main_classify_segment",
+      "main_dashboard",
+      "main_fetch_schemes",
+      "main_fetch_user",
+      "main_get_notifications",
+      "main_get_sb",
+      "main_norm",
+      "main_rationale_1",
+      "main_rationale_135",
+      "main_rationale_418",
+      "main_resolve",
+      "main_root",
+      "main_save_json",
+      "main_save_to_supabase"
+    ],
+    "1": [
+      "app",
+      "app_app",
+      "app_dashboard",
+      "app_dashboardtable",
+      "app_divider",
+      "app_generatetab",
+      "app_loader",
+      "app_metatable",
+      "app_modal",
+      "app_notifcard",
+      "app_pill",
+      "app_sectionhead",
+      "app_segmentcard",
+      "app_segmentscard",
+      "app_segmentscolumn",
+      "app_tag",
+      "app_tonecolor",
+      "app_userlistpanel"
+    ],
+    "2": [
+      "app_backup",
+      "app_backup_app",
+      "app_backup_dashboard",
+      "app_backup_divider",
+      "app_backup_generatetab",
+      "app_backup_loader",
+      "app_backup_metatable",
+      "app_backup_modal",
+      "app_backup_notifcard",
+      "app_backup_pill",
+      "app_backup_segmentcard",
+      "app_backup_segmentscard",
+      "app_backup_segmentscolumn",
+      "app_backup_tag",
+      "app_backup_userlistpanel"
+    ],
+    "3": [
+      "notify_pipeline_newest_backup",
+      "notify_pipeline_newest_backup_aggregate",
+      "notify_pipeline_newest_backup_build_prompt",
+      "notify_pipeline_newest_backup_call_gemini",
+      "notify_pipeline_newest_backup_get_rows",
+      "notify_pipeline_newest_backup_main",
+      "notify_pipeline_newest_backup_parse_json",
+      "notify_pipeline_newest_backup_print_notif",
+      "notify_pipeline_newest_backup_rationale_1",
+      "notify_pipeline_newest_backup_rationale_135",
+      "notify_pipeline_newest_backup_read_file",
+      "notify_pipeline_newest_backup_resolve",
+      "notify_pipeline_newest_backup_save",
+      "notify_pipeline_newest_backup_section"
+    ],
+    "4": [
+      "notify_pipeline_newest",
+      "notify_pipeline_newest_build_prompt",
+      "notify_pipeline_newest_call_gemini",
+      "notify_pipeline_newest_get_user_row",
+      "notify_pipeline_newest_load_schemes",
+      "notify_pipeline_newest_main",
+      "notify_pipeline_newest_parse_json",
+      "notify_pipeline_newest_print_notif",
+      "notify_pipeline_newest_rationale_1",
+      "notify_pipeline_newest_rationale_123",
+      "notify_pipeline_newest_read_file",
+      "notify_pipeline_newest_resolve",
+      "notify_pipeline_newest_save"
+    ],
+    "5": [
+      "notify_newpipeline",
+      "notify_newpipeline_aggregate",
+      "notify_newpipeline_build_meta_prompt",
+      "notify_newpipeline_build_user",
+      "notify_newpipeline_call_gemini",
+      "notify_newpipeline_choose_segment",
+      "notify_newpipeline_get_rows",
+      "notify_newpipeline_read_file",
+      "notify_newpipeline_save_result"
+    ],
+    "6": [
+      "notify_pipeline",
+      "notify_pipeline_build_meta_prompt",
+      "notify_pipeline_call_gemini",
+      "notify_pipeline_load_user",
+      "notify_pipeline_main",
+      "notify_pipeline_rationale_1",
+      "notify_pipeline_save_output",
+      "notify_pipeline_section"
+    ],
+    "7": [
+      "vite_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.2,
+    "1": 0.12,
+    "2": 0.13,
+    "3": 0.25,
+    "4": 0.27,
+    "5": 0.25,
+    "6": 0.43,
+    "7": 1
+  },
+  "gods": [
+    {
+      "id": "notify_pipeline_newest_backup_main",
+      "label": "main()",
+      "edges": 11,
+      "degree": 11
+    },
+    {
+      "id": "notify_pipeline_newest_main",
+      "label": "main()",
+      "edges": 10,
+      "degree": 10
+    },
+    {
+      "id": "main_get_notifications",
+      "label": "get_notifications()",
+      "edges": 9,
+      "degree": 9
+    },
+    {
+      "id": "notify_pipeline_main",
+      "label": "main()",
+      "edges": 6,
+      "degree": 6
+    },
+    {
+      "id": "main_get_sb",
+      "label": "get_sb()",
+      "edges": 5,
+      "degree": 5
+    },
+    {
+      "id": "main_fetch_user",
+      "label": "fetch_user()",
+      "edges": 4,
+      "degree": 4
+    },
+    {
+      "id": "main_classify_segment",
+      "label": "classify_segment()",
+      "edges": 3,
+      "degree": 3
+    },
+    {
+      "id": "main_resolve",
+      "label": "resolve()",
+      "edges": 3,
+      "degree": 3
+    },
+    {
+      "id": "main_fetch_schemes",
+      "label": "fetch_schemes()",
+      "edges": 3,
+      "degree": 3
+    },
+    {
+      "id": "main_save_to_supabase",
+      "label": "save_to_supabase()",
+      "edges": 3,
+      "degree": 3
+    }
+  ],
+  "surprises": [
+    {
+      "source": "resolve()",
+      "target": "norm()",
+      "source_files": [
+        "mvp_v2/mvp_v2/backend/main.py",
+        "backend/main.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "fetch_schemes()",
+      "target": "get_sb()",
+      "source_files": [
+        "backend/main.py",
+        "mvp_v2/mvp_v2/backend/main.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "get_notifications()",
+      "target": "fetch_schemes()",
+      "source_files": [
+        "mvp_v2/mvp_v2/backend/main.py",
+        "backend/main.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    }
+  ],
+  "labels": {
+    "0": "Community 0",
+    "1": "Community 1",
+    "2": "Community 2",
+    "3": "Community 3",
+    "4": "Community 4",
+    "5": "Community 5",
+    "6": "Community 6",
+    "7": "Community 7"
+  },
+  "questions": [
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `Notification MVP — FastAPI + Supabase\r ======================================\r E`, `1. Use primary_category field if present\r     2. Fallback: highest score wins`, `Returns all saved notification records from Supabase.\r     Groups by user_id so` to the rest of the system?",
+      "why": "8 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 1` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.12 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 2` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.13 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

@@ -23,6 +23,7 @@ Env vars:
 import os, json, asyncio
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import quote
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -154,7 +155,7 @@ def fetch_user(uid: str) -> dict:
 def fetch_schemes() -> list[dict]:
     """Fetch all active schemes from Supabase schemes table."""
     sb  = get_sb()
-    res = sb.table(TABLE_SCHEMES).select("id, name").eq("is_active", True).execute()
+    res = sb.table(TABLE_SCHEMES).select("id, name, slug").eq("is_active", True).execute()
     return res.data or []
 
 
@@ -353,6 +354,13 @@ async def get_notifications(user_id: str):
             call_gemini(client, build_prompt(profile, schemes, n), n)
             for n in range(1, 6)
         ]))
+
+    def get_scheme_url(scheme_name):
+        initials = "".join(w[0] for w in scheme_name.split() if w.strip()).lower()
+        return f"https://www.myscheme.gov.in/schemes/{initials}"
+
+    for n in notifications:
+        n["scheme_url"] = get_scheme_url(n.get("scheme_name", ""))
 
     # 5. save to Supabase
     try:
